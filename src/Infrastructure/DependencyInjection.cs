@@ -1,6 +1,8 @@
 using Application.Interfaces;
 using Domain;
+using Domain.Locations;
 using Infrastructure.Data;
+using Infrastructure.Repositories;
 using Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +23,8 @@ public static class DependencyInjection
     {
        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
        services.AddScoped<IUnitOfWork, UnitOfWork>();
+       services.AddScoped<ILocationRepository, LocationRepository>();
+       
        return services;
     }
 
