@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Domain;
+using Domain.Desks;
 using Domain.Locations;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
@@ -24,6 +25,7 @@ public static class DependencyInjection
        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
        services.AddScoped<IUnitOfWork, UnitOfWork>();
        services.AddScoped<ILocationRepository, LocationRepository>();
+       services.AddScoped<IDeskRepository, DeskRepository>();
        
        return services;
     }

@@ -12,6 +12,8 @@ public class DeskConfiguration : EntityConfiguration<Desk>
     {
         builder.ToTable("Desks");
 
+        builder.HasIndex(d => d.Name)
+            .IsUnique();
         builder.Property(d => d.Name)
             .IsRequired();
 
