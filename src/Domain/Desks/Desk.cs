@@ -7,7 +7,7 @@ public class Desk : Entity
 {
     public string Name { get; set; } = default!;
     public string? Description { get; set; }
-    public bool IsAvailable { get; set; }
+    public bool IsAvailable { get; set; } = true;
     public Guid LocationId { get; set; }
     public Location Location { get; set; } = null!;
     public ICollection<Reservation> Reservations = [];
