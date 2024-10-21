@@ -34,6 +34,9 @@ public class CreateLocationHandler : ICommandHandler<CreateLocationCommand, Loca
             }
         };
         
+        if (await _repository.IsDuplicate(location: location, cancellationToken))
+            throw new ApplicationException("Location already exists");
+        
         _repository.Add(location);
         await _unitOfWork.SaveChanges(cancellationToken);
         
