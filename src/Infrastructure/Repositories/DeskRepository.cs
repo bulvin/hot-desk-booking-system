@@ -29,4 +29,14 @@ public class DeskRepository : IDeskRepository
             .Where(d => d.Id == id && d.LocationId == locationId)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<Desk?> GetById(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Desks.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+    }
+
+    public void Update(Desk desk)
+    {
+        _dbContext.Desks.Update(desk);
+    }
 }
