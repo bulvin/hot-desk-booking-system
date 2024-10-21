@@ -46,4 +46,12 @@ public class ReservationRepository : IReservationRepository
         return await _dbContext.Reservations
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken: cancellationToken);
     }
+
+    public async Task<Reservation?> GetByDesk(Guid deskId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Reservations
+            .Include(r => r.Desk)
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.DeskId == deskId && r.Status == Status.Active, cancellationToken: cancellationToken);
+    }
 }

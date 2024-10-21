@@ -1,4 +1,5 @@
 using Application.Desks.ChangeAvailability;
+using Application.Desks.Get;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using MediatR;
@@ -30,5 +31,12 @@ public class DesksController : ControllerBase
     {
         var response = await _mediator.Send(request);
         return Ok(response);
-    } 
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<DeskDetailsDto>> GetDeskDetails(Guid id)
+    {
+        var response = await _mediator.Send(new GetDeskDetailsQuery(id));
+        return Ok(response);
+    }
 }
