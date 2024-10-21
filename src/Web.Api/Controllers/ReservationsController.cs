@@ -1,4 +1,5 @@
 using Application.Reservations.BookDesk;
+using Application.Reservations.ChangeDesk;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,5 +21,13 @@ public class ReservationsController : ControllerBase
     {
        var response = await _mediator.Send(request);
        return Created($"/reservations/{response.Id}", response);
+    }
+
+    [HttpPut("{id:guid}/change-desk")]
+    public async Task<ActionResult> ChangeDesk(Guid id, [FromBody] ChangeDeskCommand command)
+    {
+        command = command with { Id = id };
+        await _mediator.Send(command);
+        return NoContent();
     }
 }
