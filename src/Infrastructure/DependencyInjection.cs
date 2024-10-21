@@ -2,6 +2,7 @@ using Application.Interfaces;
 using Domain;
 using Domain.Desks;
 using Domain.Locations;
+using Domain.Reservations;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Infrastructure.Time;
@@ -26,6 +27,7 @@ public static class DependencyInjection
        services.AddScoped<IUnitOfWork, UnitOfWork>();
        services.AddScoped<ILocationRepository, LocationRepository>();
        services.AddScoped<IDeskRepository, DeskRepository>();
+       services.AddScoped<IReservationRepository, ReservationRepository>();
        
        return services;
     }
