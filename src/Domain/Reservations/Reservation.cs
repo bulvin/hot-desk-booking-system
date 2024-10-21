@@ -9,9 +9,9 @@ public class Reservation : Entity
     public Desk Desk { get; set; } = null!;
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
-    public Status Status { get; set; }
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    public Status Status { get; set; } = Status.Active;
 }
 
 public enum Status
