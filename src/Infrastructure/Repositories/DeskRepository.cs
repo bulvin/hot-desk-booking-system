@@ -35,6 +35,24 @@ public class DeskRepository : IDeskRepository
         return await _dbContext.Desks.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
+    public async Task<(List<Desk> Desks, int Count)> GetDesksByLocation(Guid locationId, bool? isAvailable, int page, int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Desks.AsQueryable();
+        if (isAvailable.HasValue)
+            query = query.Where(d => d.IsAvailable == isAvailable.Value);
+
+        var count = await query.CountAsync(cancellationToken);
+
+        var desks = await query
+            .OrderBy(d => d.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+        
+        return (desks, count);
+    }
+
     public void Update(Desk desk)
     {
         _dbContext.Desks.Update(desk);

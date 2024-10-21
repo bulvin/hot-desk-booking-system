@@ -48,7 +48,6 @@ public class CreateDeskHandler : ICommandHandler<CreateDeskCommand, DeskDto>
             desk.Name, 
             desk.Description, 
             desk.LocationId, 
-            desk.IsAvailable,
-            desk.Reservations.ToList());
+            desk.IsAvailable);
     }
 }
