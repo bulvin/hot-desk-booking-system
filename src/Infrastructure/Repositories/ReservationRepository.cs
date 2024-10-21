@@ -12,10 +12,27 @@ public class ReservationRepository : IReservationRepository
     {
         _dbContext = dbContext;
     }
-    
+
+    public void Add(Reservation reservation)
+    {
+        _dbContext.Reservations.Add(reservation);
+    }
+
     public async Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Reservations
             .AnyAsync(r => r.DeskId == deskId && r.Status == Status.Active, cancellationToken);
+    }
+
+    public async Task<bool> HasActiveReservationForDesk(Guid deskId, DateOnly startDate, DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Reservations
+            .AnyAsync(r =>
+                    r.DeskId == deskId &&
+                    r.Status == Status.Active &&
+                    r.StartDate <= endDate &&
+                    r.EndDate >= startDate,
+                cancellationToken);
     }
 }

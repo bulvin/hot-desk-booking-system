@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/desks")]
 [ApiController]
 public class DesksController : ControllerBase
 {
