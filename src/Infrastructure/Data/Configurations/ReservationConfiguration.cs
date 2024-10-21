@@ -16,6 +16,10 @@ public class ReservationConfiguration : EntityConfiguration<Reservation>
         builder.Property(r => r.EndDate)
             .IsRequired();
 
+        builder.Property(r => r.Status)
+            .HasConversion<string>()
+            .IsRequired();
+
         builder.HasOne(r => r.User)
             .WithMany(u => u.Reservations)
             .HasForeignKey(r => r.UserId)

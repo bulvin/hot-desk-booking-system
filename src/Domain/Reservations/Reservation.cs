@@ -11,4 +11,12 @@ public class Reservation : Entity
     public User User { get; set; } = null!;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public Status Status { get; set; }
+}
+
+public enum Status
+{
+    Active,
+    Completed,
+    Canceled
 }

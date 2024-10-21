@@ -28,9 +28,9 @@ public class DeleteDeskHandler : ICommandHandler<DeleteDeskCommand, Unit>
         var desk = await _deskRepository.GetByIdAndLocation(command.DeskId, command.LocationId, cancellationToken)
                        ?? throw new ApplicationException("Desk not found");
 
-        var hasReservations = await _reservationRepository.HasReservationsForDesk(desk.Id, cancellationToken);
-        if (hasReservations)
-            throw new ApplicationException("Cannot delete desk as it has active reservations.");
+        var hasReservation = await _reservationRepository.HasActiveReservationForDesk(desk.Id, cancellationToken);
+        if (hasReservation)
+            throw new ApplicationException("Cannot delete desk as it has active reservation.");
         
         _deskRepository.Delete(desk);
         await _unitOfWork.SaveChanges(cancellationToken);
