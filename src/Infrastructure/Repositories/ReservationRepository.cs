@@ -18,6 +18,11 @@ public class ReservationRepository : IReservationRepository
         _dbContext.Reservations.Add(reservation);
     }
 
+    public void Update(Reservation reservation)
+    {
+        _dbContext.Reservations.Update(reservation);
+    }
+
     public async Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Reservations
@@ -34,5 +39,11 @@ public class ReservationRepository : IReservationRepository
                     r.StartDate <= endDate &&
                     r.EndDate >= startDate,
                 cancellationToken);
+    }
+    
+    public async Task<Reservation?> GetById(Guid id,  CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Reservations
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken: cancellationToken);
     }
 }

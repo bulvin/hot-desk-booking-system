@@ -23,6 +23,11 @@ public class DeskRepository : IDeskRepository
         _dbContext.Desks.Remove(desk);
     }
 
+    public async Task<bool> Exists(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Desks.AnyAsync(d => d.Id == id, cancellationToken);
+    }
+
     public async Task<Desk?> GetByIdAndLocation(Guid id, Guid locationId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Desks
