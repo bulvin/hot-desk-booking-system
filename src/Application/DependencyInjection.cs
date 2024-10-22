@@ -1,3 +1,4 @@
+using Application.Behaviors;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,10 +13,10 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
         
         services.AddAutoMapper(assembly);
-        services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssembly(assembly);
         return services;
     }

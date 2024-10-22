@@ -1,4 +1,6 @@
 using Application.Desks.ChangeAvailability;
+using Application.Desks.Create;
+using Application.Desks.Delete;
 using Application.Desks.Get;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
@@ -7,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Api.Controllers;
 
-[Route("api/desks")]
+[Route("api/locations/{locationId:guid}/desks")]
 [ApiController]
 public class DesksController : ControllerBase
 {
@@ -18,25 +20,39 @@ public class DesksController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPut("{id:guid}/availability")]
-    public async Task<ActionResult> ChangeDeskAvailability(Guid id, ChangeDeskAvailabilityCommand command)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult> ChangeDeskAvailability(Guid id, Guid locationId, bool isAvailable)
     {
-        command = command with { Id = id };
-        await _mediator.Send(command);
+        await _mediator.Send(new ChangeDeskAvailabilityCommand(id, locationId, isAvailable));
         return NoContent();
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedDto<DeskDto>>> GetDesks([FromQuery] GetDesksByLocationQuery request)
+    public async Task<ActionResult<PagedDto<DeskDto>>> GetDesksForLocation(Guid locationId, [FromQuery] GetDesksByLocationRequest query)
     {
-        var response = await _mediator.Send(request);
+        var response = await _mediator.Send(new GetDesksByLocationQuery(locationId, query.IsAvailable, query.Page, query.PageSize));
         return Ok(response);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<DeskDetailsDto>> GetDeskDetails(Guid id)
+    public async Task<ActionResult<DeskDetailsDto>> GetDeskDetails(Guid id, Guid locationId)
     {
-        var response = await _mediator.Send(new GetDeskDetailsQuery(id));
+        var response = await _mediator.Send(new GetDeskDetailsQuery(id, locationId));
         return Ok(response);
+    }
+    
+    [HttpPost]
+    public async Task<ActionResult> CreateDeskInLocation(Guid locationId, [FromBody] CreateDeskCommand command)
+    {
+        command = command with { LocationId = locationId };
+        var response = await _mediator.Send(command);
+        return Created($"/locations/{response.LocationId}/desks/{response.Id}", response);
+    }
+    
+    [HttpDelete("{deskId:guid}")]
+    public async Task<IActionResult> DeleteDeskFromLocation(Guid locationId, Guid deskId)
+    {
+        await _mediator.Send(new DeleteDeskCommand(locationId, deskId));
+        return NoContent();
     }
 }

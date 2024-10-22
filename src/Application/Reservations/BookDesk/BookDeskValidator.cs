@@ -17,5 +17,9 @@ public class BookDeskCommandValidator : AbstractValidator<BookDeskCommand>
         RuleFor(command => command)
             .Must(command => (command.EndDate.ToDateTime(TimeOnly.MinValue) - command.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1 <= 7)
             .WithMessage("Booking duration cannot exceed 7 days.");
+        
+        RuleFor(b => b.StartDate)
+            .Must(startDate => startDate <= DateOnly.FromDateTime(DateTime.Today.AddDays(7)))
+            .WithMessage("You can only book a desk up to one week in advance.");
     }
 }

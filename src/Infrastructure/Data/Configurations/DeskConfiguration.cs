@@ -11,10 +11,9 @@ public class DeskConfiguration : EntityConfiguration<Desk>
     public override void Configure(EntityTypeBuilder<Desk> builder)
     {
         builder.ToTable("Desks");
-
-        builder.HasIndex(d => d.Name)
-            .IsUnique();
+        
         builder.Property(d => d.Name)
+            .HasMaxLength(50)
             .IsRequired();
 
         builder.Property(d => d.Description)

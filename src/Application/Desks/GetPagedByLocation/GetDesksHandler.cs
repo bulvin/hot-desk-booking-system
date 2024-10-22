@@ -7,6 +7,7 @@ namespace Application.Desks.GetPagedByLocation;
 
 public record GetDesksByLocationQuery(Guid LocationId, bool? IsAvailable, int? Page, int? PageSize) : IQuery<PagedDto<DeskDto>>;
 
+public record GetDesksByLocationRequest(bool? IsAvailable, int? Page, int? PageSize);
 public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<DeskDto>>
 {
     private readonly IDeskRepository _repository;
@@ -17,7 +18,6 @@ public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<D
         _repository = repository;
         _mapper = mapper;
     }
-
     public async Task<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
     {
         var page = query.Page ?? 1;
