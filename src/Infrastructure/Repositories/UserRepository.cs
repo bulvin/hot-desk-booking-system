@@ -27,4 +27,11 @@ public class UserRepository : IUserRepository
     {
         return await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
     }
+
+    public async Task<User?> GetByEmail(string email, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .Include(u => u.Roles)
+            .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
+    }
 }

@@ -35,7 +35,7 @@ public class Jwt : ITokenProvider
         };
         
         var roles = user.Roles;
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.ToString()!)));
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.Name.ToString())));
         
         var token = new JwtSecurityToken
         (

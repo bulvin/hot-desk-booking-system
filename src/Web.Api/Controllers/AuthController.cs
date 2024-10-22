@@ -1,3 +1,4 @@
+using Application.Users.Login;
 using Application.Users.Register;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,13 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     public async Task<ActionResult> Register(RegisterUserCommand command)
+    {
+        var response = await _mediator.Send(command);
+        return Ok(response);
+    }
+    
+    [HttpPost("login")]
+    public async Task<ActionResult> Login(LoginUserCommand command)
     {
         var response = await _mediator.Send(command);
         return Ok(response);
