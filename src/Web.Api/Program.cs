@@ -4,6 +4,7 @@ using Infrastructure;
 using Infrastructure.Data.Converters;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,4 +46,5 @@ app.MapControllers();
 app.UseHttpsRedirection();
 app.UseExceptionHandler();
 
+await app.EnsureDatabaseCreated();
 app.Run();

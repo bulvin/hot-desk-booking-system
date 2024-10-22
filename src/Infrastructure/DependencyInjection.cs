@@ -3,6 +3,7 @@ using Domain;
 using Domain.Desks;
 using Domain.Locations;
 using Domain.Reservations;
+using Domain.Users;
 using Infrastructure.Authentication;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
@@ -32,6 +33,7 @@ public static class DependencyInjection
        services.AddScoped<ILocationRepository, LocationRepository>();
        services.AddScoped<IDeskRepository, DeskRepository>();
        services.AddScoped<IReservationRepository, ReservationRepository>();
+       services.AddScoped<IUserRepository, UserRepository>();
        
        return services;
     }
@@ -58,8 +60,10 @@ public static class DependencyInjection
                 ClockSkew = TimeSpan.Zero
             };
         });
+        
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         services.AddSingleton<ITokenProvider, Jwt>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
         
         services.AddHttpContextAccessor();
 

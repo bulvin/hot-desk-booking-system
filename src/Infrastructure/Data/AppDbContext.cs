@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema("HotDeskBooking");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        
         base.OnModelCreating(modelBuilder);
     }
 }
