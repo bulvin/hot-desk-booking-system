@@ -4,6 +4,7 @@ using Infrastructure;
 using Infrastructure.Data.Converters;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using Web.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
     });
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -38,5 +43,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 app.UseHttpsRedirection();
+app.UseExceptionHandler();
 
 app.Run();
