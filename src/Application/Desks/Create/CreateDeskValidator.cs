@@ -10,7 +10,7 @@ public class CreateDeskValidator : AbstractValidator<CreateDeskCommand>
             .NotEmpty().WithMessage("Desk name/number is required");
 
         RuleFor(d => d.LocationId)
-            .NotEmpty().WithMessage("Invalid location id");
+            .NotEmpty().WithMessage("Location id is required");
 
         RuleFor(d => d.Name)
             .MaximumLength(50).WithMessage("Desk name can be at most 50 characters long");

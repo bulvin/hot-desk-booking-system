@@ -28,10 +28,7 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
     {
         var desk = await _deskRepository.GetById(command.DeskId, cancellationToken)
                    ?? throw new ApplicationException($"Desk with {command.DeskId} not found");
-
-        if (!desk.IsAvailable)
-            throw new ApplicationException("The desk is not available for booking.");
-
+        
         var existingReservation = await _reservationRepository.HasActiveReservationForDesk(
                 desk.Id, 
                 command.StartDate, 
@@ -51,6 +48,7 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
         };
         
         _reservationRepository.Add(reservation);
+        desk.IsAvailable = false;
         await _unitOfWork.SaveChanges(cancellationToken);
         
         var reservationDto = _mapper.Map<ReservationDto>(reservation);

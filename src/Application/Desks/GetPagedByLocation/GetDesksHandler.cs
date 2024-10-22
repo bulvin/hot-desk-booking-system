@@ -30,7 +30,7 @@ public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<D
             pageSize,
             cancellationToken);
 
-        var deskDtos = _mapper.Map<List<DeskDto>>(desks);
-        return new PagedDto<DeskDto>(deskDtos, page, pageSize, totalCount);
+        var desksDtos = _mapper.Map<List<DeskDto>>(desks);
+        return new PagedDto<DeskDto>(desksDtos, page, pageSize, totalCount);
     }
 }

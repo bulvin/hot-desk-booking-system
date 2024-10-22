@@ -1,4 +1,5 @@
 using Domain.Desks;
+using Domain.Reservations;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,18 +44,23 @@ public class DeskRepository : IDeskRepository
     public async Task<(List<Desk> Desks, int Count)> GetDesksByLocation(Guid locationId, bool? isAvailable, int page, int pageSize,
         CancellationToken cancellationToken)
     {
-        var query = _dbContext.Desks.AsQueryable();
+        var query = _dbContext.Desks
+            .Include(d => d.Reservations) 
+            .Where(d => d.LocationId == locationId); 
+  
         if (isAvailable.HasValue)
+        {
             query = query.Where(d => d.IsAvailable == isAvailable.Value);
-
+        }
+        
         var count = await query.CountAsync(cancellationToken);
-
+        
         var desks = await query
             .OrderBy(d => d.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-        
+    
         return (desks, count);
     }
 
