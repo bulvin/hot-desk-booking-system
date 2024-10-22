@@ -32,19 +32,4 @@ public class LocationsController : ControllerBase
         await _mediator.Send(command);
         return NoContent();
     }
-    
-    [HttpPost("{id:guid}/desks")]
-    public async Task<ActionResult> CreateDeskInLocation(Guid id, [FromBody] CreateDeskCommand command)
-    {
-        command = command with { LocationId = id };
-        var response = await _mediator.Send(command);
-        return Created($"/locations/{response.LocationId}/desks/{response.Id}", response);
-    }
-    
-    [HttpDelete("{locationId:guid}/desks/{deskId:guid}")]
-    public async Task<IActionResult> DeleteDeskFromLocation(Guid locationId, Guid deskId)
-    {
-        await _mediator.Send(new DeleteDeskCommand(locationId, deskId));
-        return NoContent();
-    }
 }

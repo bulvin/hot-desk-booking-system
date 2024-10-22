@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Desks.ChangeAvailability;
 
-public record ChangeDeskAvailabilityCommand(Guid Id, bool IsAvailable) : ICommand<Unit>;
+public record ChangeDeskAvailabilityCommand(Guid Id, Guid LocationId, bool IsAvailable) : ICommand<Unit>;
 
 public class ChangeDeskAvailabilityHandler : ICommandHandler<ChangeDeskAvailabilityCommand, Unit>
 {
@@ -23,6 +23,9 @@ public class ChangeDeskAvailabilityHandler : ICommandHandler<ChangeDeskAvailabil
         var desk = await _deskRepository.GetById(command.Id, cancellationToken)
                    ?? throw new ApplicationException("Desk not found");
 
+        if (desk.LocationId != command.LocationId)
+            throw new ApplicationException("Location not found");
+        
         if (desk.IsAvailable == command.IsAvailable)
             throw new ApplicationException($"Desk is already {(command.IsAvailable ? "available" : "unavailable")}.");
         

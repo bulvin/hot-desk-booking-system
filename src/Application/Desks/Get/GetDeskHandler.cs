@@ -5,7 +5,7 @@ using Domain.Reservations;
 
 namespace Application.Desks.Get;
 
-public record GetDeskDetailsQuery(Guid Id) : IQuery<DeskDetailsDto>;
+public record GetDeskDetailsQuery(Guid Id, Guid LocationId) : IQuery<DeskDetailsDto>;
 
 public class GetDeskHandler : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
 {
@@ -21,6 +21,9 @@ public class GetDeskHandler : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
         var reservationForDesk = await _reservationRepository.GetByDesk(query.Id, cancellationToken)
                    ?? throw new ApplicationException("desk not found");
 
+        if (reservationForDesk.Desk.LocationId != query.LocationId)
+            throw new ApplicationException("location not found");
+        
         var fullName = reservationForDesk.User.FirstName + " " + reservationForDesk.User.LastName;
         var deskDto = new DeskDetailsDto(
             reservationForDesk.DeskId,
