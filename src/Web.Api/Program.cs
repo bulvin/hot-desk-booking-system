@@ -14,14 +14,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-    options.MapType<DateOnly>(() => new OpenApiSchema
-    {
-        Type = "string",
-        Format = "date",
-        Example = new OpenApiString("2024-01-01")
-    })
-);
+builder.Services.AddSwaggerGenWithAuth();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
