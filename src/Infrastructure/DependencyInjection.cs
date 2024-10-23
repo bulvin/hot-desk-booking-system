@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Application.Interfaces;
 using Domain;
 using Domain.Desks;
@@ -22,6 +23,7 @@ public static class DependencyInjection
     {
        return services
            .AddServices()
+           .AddAuthorization()
            .AddAuthentication(configuration)
            .AddDatabase(configuration);
     }
@@ -66,6 +68,21 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         
         services.AddHttpContextAccessor();
+        
+        return services;
+    }
+
+    private static IServiceCollection AddAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorizationBuilder()
+            .AddPolicy(PolicyNames.Admin, policy =>
+            {
+                policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin);
+            })
+            .AddPolicy(PolicyNames.Employee, policy =>
+            {
+                policy.RequireClaim(ClaimTypes.Role, PolicyNames.Employee);
+            });
 
         return services;
     }

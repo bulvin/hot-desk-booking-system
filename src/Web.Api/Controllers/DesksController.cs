@@ -4,13 +4,18 @@ using Application.Desks.Delete;
 using Application.Desks.Get;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
+using Domain.Users;
+using Infrastructure.Authentication;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Extensions;
 
 namespace Web.Api.Controllers;
 
 [Route("api/locations/{locationId:guid}/desks")]
 [ApiController]
+[Authorize]
 public class DesksController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -21,6 +26,7 @@ public class DesksController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = PolicyNames.Admin)]
     public async Task<ActionResult> ChangeDeskAvailability(Guid id, Guid locationId, bool isAvailable)
     {
         await _mediator.Send(new ChangeDeskAvailabilityCommand(id, locationId, isAvailable));
@@ -42,6 +48,7 @@ public class DesksController : ControllerBase
     }
     
     [HttpPost]
+    [Authorize(Policy = PolicyNames.Admin)]
     public async Task<ActionResult> CreateDeskInLocation(Guid locationId, [FromBody] CreateDeskCommand command)
     {
         command = command with { LocationId = locationId };
@@ -50,6 +57,7 @@ public class DesksController : ControllerBase
     }
     
     [HttpDelete("{deskId:guid}")]
+    [Authorize(Policy = PolicyNames.Admin)]
     public async Task<IActionResult> DeleteDeskFromLocation(Guid locationId, Guid deskId)
     {
         await _mediator.Send(new DeleteDeskCommand(locationId, deskId));

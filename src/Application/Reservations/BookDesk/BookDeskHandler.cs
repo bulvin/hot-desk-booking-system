@@ -4,6 +4,8 @@ using AutoMapper;
 using Domain;
 using Domain.Desks;
 using Domain.Reservations;
+using Infrastructure.Authentication;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Reservations.BookDesk;
 
@@ -15,13 +17,15 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
     private readonly IDeskRepository _deskRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public BookDeskHandler(IReservationRepository repository, IUnitOfWork unitOfWork, IDeskRepository deskRepository, IMapper mapper)
+    public BookDeskHandler(IReservationRepository repository, IUnitOfWork unitOfWork, IDeskRepository deskRepository, IMapper mapper, IHttpContextAccessor httpContextAccessor)
     {
         _reservationRepository = repository;
         _unitOfWork = unitOfWork;
         _deskRepository = deskRepository;
         _mapper = mapper;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<ReservationDto> Handle(BookDeskCommand command, CancellationToken cancellationToken)
@@ -41,7 +45,7 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
         var reservation = new Reservation
         {
             DeskId = desk.Id,
-            UserId = new Guid("89e97e68-7474-40e7-b48a-a9b4b6a7a6af"),
+            UserId = _httpContextAccessor.GetUserId(),
             StartDate = command.StartDate,
             EndDate = command.EndDate,
             Status = Status.Active

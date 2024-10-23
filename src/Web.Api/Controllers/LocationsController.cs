@@ -1,14 +1,15 @@
-using Application.Desks.Create;
-using Application.Desks.Delete;
 using Application.Locations.Create;
 using Application.Locations.Delete;
+using Infrastructure.Authentication;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Api.Controllers;
 
 [Route("api/locations")]
 [ApiController]
+[Authorize(Policy = PolicyNames.Admin)]
 public class LocationsController : ControllerBase
 {
     private readonly IMediator _mediator;
