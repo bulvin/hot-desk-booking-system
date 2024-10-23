@@ -15,7 +15,7 @@ public class GetDeskHandler : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
     private readonly IDeskRepository _deskRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public GetDeskHandler(IReservationRepository reservationRepository, IHttpContextAccessor httpContextAccessor, IDeskRepository deskRepository)
+    public GetDeskHandler(IHttpContextAccessor httpContextAccessor, IDeskRepository deskRepository)
     {
         _httpContextAccessor = httpContextAccessor;
         _deskRepository = deskRepository;
