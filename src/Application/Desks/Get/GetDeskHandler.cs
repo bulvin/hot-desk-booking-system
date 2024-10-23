@@ -1,7 +1,10 @@
 using Application.Dtos;
 using Application.Interfaces.CQRS;
-using Domain;
+using Domain.Desks;
 using Domain.Reservations;
+using Domain.Users;
+using Infrastructure.Authentication;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Desks.Get;
 
@@ -9,31 +12,58 @@ public record GetDeskDetailsQuery(Guid Id, Guid LocationId) : IQuery<DeskDetails
 
 public class GetDeskHandler : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
 {
-    private readonly IReservationRepository _reservationRepository;
+    private readonly IDeskRepository _deskRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public GetDeskHandler(IReservationRepository reservationRepository)
+    public GetDeskHandler(IReservationRepository reservationRepository, IHttpContextAccessor httpContextAccessor, IDeskRepository deskRepository)
     {
-        _reservationRepository = reservationRepository;
+        _httpContextAccessor = httpContextAccessor;
+        _deskRepository = deskRepository;
     }
-
+    
     public async Task<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
     {
-        var reservationForDesk = await _reservationRepository.GetByDesk(query.Id, cancellationToken)
-                   ?? throw new ApplicationException("desk not found");
+        var desk = await _deskRepository.GetById(query.Id, cancellationToken)
+                                 ?? throw new ApplicationException("desk not found");
 
-        if (reservationForDesk.Desk.LocationId != query.LocationId)
+        if (desk.LocationId != query.LocationId)
             throw new ApplicationException("location not found");
-        
-        var fullName = reservationForDesk.User.FirstName + " " + reservationForDesk.User.LastName;
-        var deskDto = new DeskDetailsDto(
-            reservationForDesk.DeskId,
-            reservationForDesk.Desk.Name,
-            reservationForDesk.Desk.Description,
-            reservationForDesk.Desk.LocationId,
-            reservationForDesk.Desk.IsAvailable,
-            new ReservationWithUserDto(reservationForDesk.Id, reservationForDesk.StartDate, reservationForDesk.EndDate, reservationForDesk.Status, 
-                new UserReservesDto(reservationForDesk.UserId, fullName)));
 
-        return deskDto;
+        var activeReservation =  desk.Reservations.FirstOrDefault();
+        ReservationWithUserDto? reservation = null;
+        if (activeReservation is not null)
+            reservation = CreateReservationDto(activeReservation);
+
+        return new DeskDetailsDto(
+            desk.Id,
+            desk.Name,
+            desk.Description,
+            desk.LocationId,
+            desk.IsAvailable,
+            reservation);
+    }
+
+    private ReservationWithUserDto? CreateReservationDto(Reservation reservation)
+    {
+        var isAdmin = _httpContextAccessor.HasRole(UserRole.Administrator);
+        
+        UserReservesDto? userDto = null;
+        if (!isAdmin)
+            return new ReservationWithUserDto(
+                reservation.Id,
+                reservation.StartDate,
+                reservation.EndDate,
+                reservation.Status,
+                userDto);
+        
+        var fullName = $"{reservation.User.FirstName} {reservation.User.LastName}";
+        userDto = new UserReservesDto(reservation.UserId, fullName);
+
+        return new ReservationWithUserDto(
+            reservation.Id,
+            reservation.StartDate,
+            reservation.EndDate,
+            reservation.Status,
+            userDto);
     }
 }

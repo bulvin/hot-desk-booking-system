@@ -1,12 +1,14 @@
 using Application.Reservations.BookDesk;
 using Application.Reservations.ChangeDesk;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Api.Controllers;
 
 [Route("api/reservations")]
 [ApiController]
+[Authorize]
 public class ReservationsController : ControllerBase
 {
     private readonly IMediator _mediator;

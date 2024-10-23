@@ -38,7 +38,10 @@ public class DeskRepository : IDeskRepository
 
     public async Task<Desk?> GetById(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Desks.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+        return await _dbContext.Desks
+            .Include(d => d.Reservations.Where(r => r.Status == Status.Active)) 
+            .ThenInclude(r => r.User) 
+            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
     public async Task<(List<Desk> Desks, int Count)> GetDesksByLocation(Guid locationId, bool? isAvailable, int page, int pageSize,

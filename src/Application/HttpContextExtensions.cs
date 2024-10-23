@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Domain.Users;
 using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Authentication;
@@ -16,5 +17,10 @@ public static class HttpContextExtensions
         return Guid.TryParse(id, out var parsedId)
             ? parsedId
             : throw new ApplicationException("Invalid User ID format");
+    }
+
+    public static bool HasRole(this IHttpContextAccessor httpContextAccessor, UserRole role)
+    {
+        return httpContextAccessor.HttpContext?.User.IsInRole(role.ToString()) ?? false;
     }
 }

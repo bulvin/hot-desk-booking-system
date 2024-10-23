@@ -8,5 +8,5 @@ public record DeskDetailsDto(
     string? Description, 
     Guid LocationId, 
     bool IsAvailable,
-    ReservationWithUserDto Reservation
+    ReservationWithUserDto? Reservation
     );
