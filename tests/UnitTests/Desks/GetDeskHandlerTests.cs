@@ -86,7 +86,7 @@ public class GetDeskHandlerTests
             },
             StartDate = today,
             EndDate = tomorrow,
-            Status = Status.Active
+            Status = Status.Reserved
         };
 
         var desk = new Desk
@@ -118,7 +118,7 @@ public class GetDeskHandlerTests
         Assert.Equal(reservationId, result.Reservation.Id);
         Assert.Equal(today, result.Reservation.StartDate);
         Assert.Equal(tomorrow, result.Reservation.EndDate);
-        Assert.Equal(Status.Active, result.Reservation.Status);
+        Assert.Equal(Status.Reserved, result.Reservation.Status);
 
         if (isAdmin)
         {
