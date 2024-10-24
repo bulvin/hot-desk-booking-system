@@ -11,6 +11,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddSwaggerGen(o =>
         {
+            o.SwaggerDoc("v1", new OpenApiInfo { Title = "HotDesk Booking API", Version = "v1" });
+           
             o.MapType<DateOnly>(() => new OpenApiSchema
             {
                 Type = "string",
@@ -44,7 +46,7 @@ public static class ServiceCollectionExtensions
                     []
                 }
             };
-
+            o.EnableAnnotations();
             o.AddSecurityRequirement(securityRequirement);
         });
 

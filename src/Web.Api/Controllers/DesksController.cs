@@ -4,12 +4,11 @@ using Application.Desks.Delete;
 using Application.Desks.Get;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
-using Domain.Users;
 using Infrastructure.Authentication;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Extensions;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Web.Api.Controllers;
 
@@ -26,45 +25,75 @@ public class DesksController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = PolicyNames.Admin)]
-    public async Task<ActionResult> ChangeDeskAvailability(Guid id, Guid locationId, bool isAvailable)
-    {
-        await _mediator.Send(new ChangeDeskAvailabilityCommand(id, locationId, isAvailable));
-        return NoContent();
-    }
+   [Authorize(Policy = PolicyNames.Admin)]
+   [SwaggerOperation(
+      Summary = "update desk availability"
+   )]
+   [ProducesResponseType(StatusCodes.Status204NoContent)]
+   [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+   [ProducesResponseType(StatusCodes.Status403Forbidden)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   public async Task<ActionResult> ChangeDeskAvailability(Guid id, Guid locationId, bool isAvailable)
+   {
+      await _mediator.Send(new ChangeDeskAvailabilityCommand(id, locationId, isAvailable));
+      return NoContent();
+   }
 
-    [HttpGet]
-    public async Task<ActionResult<PagedDto<DeskDto>>> GetDesksForLocation(Guid locationId, [FromQuery] GetDesksByLocationRequest query)
-    {
-        var response = await _mediator.Send(new GetDesksByLocationQuery(locationId, 
-            new DeskAvailabilityFilter(query.IsAvailable, query.IsBookable), 
-            new DateRange(query.StartDate, query.EndDate), 
-            new PaginationFilter(query.Page, query.PageSize)));
-        
-        return Ok(response);
-    }
+   [HttpGet]
+   [SwaggerOperation(
+      Summary = "Get paged desks for location"
+   )]
+   [ProducesResponseType(typeof(PagedDto<DeskDto>), StatusCodes.Status200OK)]
+   [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+   public async Task<ActionResult<PagedDto<DeskDto>>> GetDesksForLocation(Guid locationId, [FromQuery] GetDesksByLocationRequest query)
+   {
+      var response = await _mediator.Send(new GetDesksByLocationQuery(locationId, 
+          new DeskAvailabilityFilter(query.IsAvailable, query.IsBookable), 
+          new DateRange(query.StartDate, query.EndDate), 
+          new PaginationFilter(query.Page, query.PageSize)));
+      
+      return Ok(response);
+   }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<DeskDetailsDto>> GetDeskDetails(Guid id, Guid locationId)
-    {
-        var response = await _mediator.Send(new GetDeskDetailsQuery(id, locationId));
-        return Ok(response);
-    }
-    
-    [HttpPost]
-    [Authorize(Policy = PolicyNames.Admin)]
-    public async Task<ActionResult> CreateDeskInLocation(Guid locationId, [FromBody] CreateDeskCommand command)
-    {
-        command = command with { LocationId = locationId };
-        var response = await _mediator.Send(command);
-        return Created($"/locations/{response.LocationId}/desks/{response.Id}", response);
-    }
-    
-    [HttpDelete("{deskId:guid}")]
-    [Authorize(Policy = PolicyNames.Admin)]
-    public async Task<IActionResult> DeleteDeskFromLocation(Guid locationId, Guid deskId)
-    {
-        await _mediator.Send(new DeleteDeskCommand(locationId, deskId));
-        return NoContent();
-    }
+   [HttpGet("{id:guid}")]
+   [SwaggerOperation(
+      Summary = "Get desk details"
+   )]
+   [ProducesResponseType(typeof(DeskDetailsDto), StatusCodes.Status200OK)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   public async Task<ActionResult<DeskDetailsDto>> GetDeskDetails(Guid id, Guid locationId)
+   {
+      var response = await _mediator.Send(new GetDeskDetailsQuery(id, locationId));
+      return Ok(response);
+   }
+
+   [HttpPost]
+   [Authorize(Policy = PolicyNames.Admin)]
+   [SwaggerOperation(
+      Summary = "Create desk in location"
+   )]
+   [ProducesResponseType(StatusCodes.Status201Created)]
+   [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+   [ProducesResponseType(StatusCodes.Status403Forbidden)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   public async Task<ActionResult> CreateDeskInLocation(Guid locationId, [FromBody] CreateDeskCommand command)
+   {
+      command = command with { LocationId = locationId };
+      var response = await _mediator.Send(command);
+      return Created($"/locations/{response.LocationId}/desks/{response.Id}", response);
+   }
+
+   [HttpDelete("{deskId:guid}")]
+   [Authorize(Policy = PolicyNames.Admin)]
+   [SwaggerOperation(
+      Summary = "Delete desk"
+   )]
+   [ProducesResponseType(StatusCodes.Status204NoContent)]
+   [ProducesResponseType(StatusCodes.Status403Forbidden)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   public async Task<IActionResult> DeleteDeskFromLocation(Guid locationId, Guid deskId)
+   {
+      await _mediator.Send(new DeleteDeskCommand(locationId, deskId));
+      return NoContent();
+   }
 }
