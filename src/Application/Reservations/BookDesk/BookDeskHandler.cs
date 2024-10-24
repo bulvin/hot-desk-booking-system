@@ -4,7 +4,6 @@ using AutoMapper;
 using Domain;
 using Domain.Desks;
 using Domain.Reservations;
-using Infrastructure.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace Application.Reservations.BookDesk;
@@ -32,6 +31,9 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
     {
         var desk = await _deskRepository.GetById(command.DeskId, cancellationToken)
                    ?? throw new ApplicationException($"Desk with {command.DeskId} not found");
+
+        if (!desk.IsAvailable)
+            throw new ApplicationException("The desk is not available to work");
         
         var existingReservation = await _reservationRepository.HasActiveReservationForDesk(
                 desk.Id, 
@@ -42,17 +44,17 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
         if (existingReservation)
             throw new ApplicationException("The desk is already booked for the specified period");
         
+        
         var reservation = new Reservation
         {
             DeskId = desk.Id,
             UserId = _httpContextAccessor.GetUserId(),
             StartDate = command.StartDate,
             EndDate = command.EndDate,
-            Status = Status.Active
+            Status = Status.Reserved
         };
         
         _reservationRepository.Add(reservation);
-        desk.IsAvailable = false;
         await _unitOfWork.SaveChanges(cancellationToken);
         
         var reservationDto = _mapper.Map<ReservationDto>(reservation);

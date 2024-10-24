@@ -1,3 +1,4 @@
+using Infrastructure.Data.Converters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -14,7 +15,7 @@ public static class ServiceCollectionExtensions
             {
                 Type = "string",
                 Format = "date",
-                Example = new OpenApiString("2024-01-01")
+                Default = new OpenApiString(DateOnly.FromDateTime(DateTime.Today).ToString(DateOnlyJsonConverter.Format))
             });
             
             var securityScheme = new OpenApiSecurityScheme

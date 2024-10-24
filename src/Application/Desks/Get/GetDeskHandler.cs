@@ -3,7 +3,6 @@ using Application.Interfaces.CQRS;
 using Domain.Desks;
 using Domain.Reservations;
 using Domain.Users;
-using Infrastructure.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace Application.Desks.Get;

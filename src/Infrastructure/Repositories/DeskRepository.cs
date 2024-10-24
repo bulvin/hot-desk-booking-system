@@ -39,21 +39,38 @@ public class DeskRepository : IDeskRepository
     public async Task<Desk?> GetById(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Desks
-            .Include(d => d.Reservations.Where(r => r.Status == Status.Active)) 
+            .Include(d => d.Reservations.Where(r => r.Status == Status.Reserved)) 
             .ThenInclude(r => r.User) 
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
-    public async Task<(List<Desk> Desks, int Count)> GetDesksByLocation(Guid locationId, bool? isAvailable, int page, int pageSize,
+    public async Task<(List<Desk> Desks, int Count)> GetDesksByLocation(Guid locationId, bool? isAvailable, bool? isBookable, DateOnly startDate, DateOnly endDate, int page, int pageSize,
         CancellationToken cancellationToken)
     {
         var query = _dbContext.Desks
-            .Include(d => d.Reservations) 
+            .Include(d => d.Reservations.Where(r => r.Status == Status.Reserved))
             .Where(d => d.LocationId == locationId); 
   
         if (isAvailable.HasValue)
         {
             query = query.Where(d => d.IsAvailable == isAvailable.Value);
+        }
+
+        if (isBookable.HasValue)
+        {
+            if (isBookable.Value)
+            {
+                query = query.Where(d => !d.Reservations.Any(r =>
+                    r.StartDate <= endDate &&
+                    r.EndDate >= startDate
+                ));
+            }
+            else
+            {
+                query = query.Where(d => d.Reservations.Any(r => 
+                    r.StartDate <= endDate &&
+                    r.EndDate >= startDate));
+            }
         }
         
         var count = await query.CountAsync(cancellationToken);
@@ -66,7 +83,7 @@ public class DeskRepository : IDeskRepository
     
         return (desks, count);
     }
-
+    
     public void Update(Desk desk)
     {
         _dbContext.Desks.Update(desk);

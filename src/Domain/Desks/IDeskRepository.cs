@@ -11,6 +11,9 @@ public interface IDeskRepository
     Task<(List<Desk> Desks, int Count)> GetDesksByLocation(
         Guid locationId,
         bool? isAvailable,
+        bool? isBookable,
+        DateOnly startDate,
+        DateOnly endDate,
         int page, 
         int pageSize,
         CancellationToken cancellationToken);

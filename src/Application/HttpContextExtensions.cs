@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Domain.Users;
 using Microsoft.AspNetCore.Http;
 
-namespace Infrastructure.Authentication;
+namespace Application;
 
 public static class HttpContextExtensions
 {

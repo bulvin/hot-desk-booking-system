@@ -36,7 +36,11 @@ public class DesksController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedDto<DeskDto>>> GetDesksForLocation(Guid locationId, [FromQuery] GetDesksByLocationRequest query)
     {
-        var response = await _mediator.Send(new GetDesksByLocationQuery(locationId, query.IsAvailable, query.Page, query.PageSize));
+        var response = await _mediator.Send(new GetDesksByLocationQuery(locationId, 
+            new DeskAvailabilityFilter(query.IsAvailable, query.IsBookable), 
+            new DateRange(query.StartDate, query.EndDate), 
+            new PaginationFilter(query.Page, query.PageSize)));
+        
         return Ok(response);
     }
 

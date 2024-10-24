@@ -11,13 +11,16 @@ public class GlobalExceptionHandler : IExceptionHandler
         if (exception is FluentValidation.ValidationException fluentException)
         {
             problemDetails.Title = "One or more validation errors occurred.";
-            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            httpContext.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
             List<string> errors = [];
             errors.AddRange(fluentException.Errors.Select(error => error.ErrorMessage));
             problemDetails.Extensions.Add("errors", errors);
         }
         else
         {
+            if (exception is ApplicationException)
+                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            
             problemDetails.Title = exception.Message;
         }
 

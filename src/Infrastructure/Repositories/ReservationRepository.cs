@@ -26,7 +26,7 @@ public class ReservationRepository : IReservationRepository
     public async Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Reservations
-            .AnyAsync(r => r.DeskId == deskId && r.Status == Status.Active, cancellationToken);
+            .AnyAsync(r => r.DeskId == deskId && r.Status == Status.Reserved, cancellationToken);
     }
 
     public async Task<bool> HasActiveReservationForDesk(Guid deskId, DateOnly startDate, DateOnly endDate,
@@ -35,7 +35,7 @@ public class ReservationRepository : IReservationRepository
         return await _dbContext.Reservations
             .AnyAsync(r =>
                     r.DeskId == deskId &&
-                    r.Status == Status.Active &&
+                    r.Status == Status.Reserved &&
                     r.StartDate <= endDate &&
                     r.EndDate >= startDate,
                 cancellationToken);
@@ -52,6 +52,6 @@ public class ReservationRepository : IReservationRepository
         return await _dbContext.Reservations
             .Include(r => r.Desk)
             .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.DeskId == deskId && r.Status == Status.Active, cancellationToken: cancellationToken);
+            .FirstOrDefaultAsync(r => r.DeskId == deskId && r.Status == Status.Reserved, cancellationToken: cancellationToken);
     }
 }
