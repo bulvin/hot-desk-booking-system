@@ -1,5 +1,7 @@
 using Application.Interfaces.CQRS;
 using Domain;
+using Domain.Exceptions;
+using Domain.Exceptions.Locations;
 using Domain.Locations;
 using MediatR;
 
@@ -21,11 +23,11 @@ public class DeleteLocationHandler : ICommandHandler<DeleteLocationCommand, Unit
     public async Task<Unit> Handle(DeleteLocationCommand command, CancellationToken cancellationToken)
     {
         var location = await _repository.GetById(command.Id, cancellationToken) 
-                       ?? throw new ApplicationException("Location Not Found");
+                       ?? throw new LocationNotFoundException(command.Id);
         
         if (location.Desks.Count != 0)
         {
-            throw new ApplicationException("Cannot delete location with existing desks");
+            throw new LocationHasDesksException(location.Id);
         }
 
         _repository.Delete(location);

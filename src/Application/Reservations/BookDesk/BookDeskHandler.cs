@@ -3,6 +3,8 @@ using Application.Interfaces.CQRS;
 using AutoMapper;
 using Domain;
 using Domain.Desks;
+using Domain.Exceptions;
+using Domain.Exceptions.Desks;
 using Domain.Reservations;
 using Microsoft.AspNetCore.Http;
 
@@ -30,10 +32,10 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
     public async Task<ReservationDto> Handle(BookDeskCommand command, CancellationToken cancellationToken)
     {
         var desk = await _deskRepository.GetById(command.DeskId, cancellationToken)
-                   ?? throw new ApplicationException($"Desk with {command.DeskId} not found");
+                   ?? throw new DeskNotFoundException(command.DeskId);
 
         if (!desk.IsAvailable)
-            throw new ApplicationException("The desk is not available to work");
+            throw new DeskNotAvailableException(command.DeskId);
         
         var existingReservation = await _reservationRepository.HasActiveReservationForDesk(
                 desk.Id, 
@@ -42,7 +44,7 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
                 cancellationToken);
 
         if (existingReservation)
-            throw new ApplicationException("The desk is already booked for the specified period");
+            throw new DeskAlreadyReservedException(command.DeskId, command.StartDate, command.EndDate);
         
         
         var reservation = new Reservation

@@ -1,6 +1,8 @@
 using Application.Interfaces;
 using Application.Interfaces.CQRS;
 using Domain;
+using Domain.Exceptions;
+using Domain.Exceptions.Users;
 using Domain.Users;
 
 namespace Application.Users.Register;
@@ -24,7 +26,7 @@ public class RegisterUserHandler: ICommandHandler<RegisterUserCommand, Guid>
     public async Task<Guid> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         if (await _repository.Exists(request.Email, cancellationToken))
-            throw new ApplicationException("Email is already taken");
+            throw new EmailAlreadyExistsException(request.Email);
 
         var password = _passwordHasher.Hash(request.Password);
         var user = new User
@@ -35,7 +37,7 @@ public class RegisterUserHandler: ICommandHandler<RegisterUserCommand, Guid>
             Password = password,
         };
         var role = await _repository.GetRoleByName(UserRole.Employee.ToString(), cancellationToken)
-                   ?? throw new ApplicationException("Role not exists");
+                   ?? throw new RoleNotFoundException(UserRole.Employee.ToString());
         
         user.Roles.Add(role);
         _repository.Add(user);

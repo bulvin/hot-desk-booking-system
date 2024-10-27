@@ -1,6 +1,9 @@
 using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Desks;
+using Domain.Exceptions;
+using Domain.Exceptions.Desks;
+using Domain.Exceptions.Locations;
 using MediatR;
 
 namespace Application.Desks.ChangeAvailability;
@@ -21,13 +24,13 @@ public class ChangeDeskAvailabilityHandler : ICommandHandler<ChangeDeskAvailabil
     public async Task<Unit> Handle(ChangeDeskAvailabilityCommand command, CancellationToken cancellationToken)
     {
         var desk = await _deskRepository.GetById(command.Id, cancellationToken)
-                   ?? throw new ApplicationException("Desk not found");
+                   ?? throw new DeskNotFoundException(command.Id);
 
         if (desk.LocationId != command.LocationId)
-            throw new ApplicationException("Location not found");
+            throw new LocationNotFoundException(command.LocationId);
         
         if (desk.IsAvailable == command.IsAvailable)
-            throw new ApplicationException($"Desk is already {(command.IsAvailable ? "available" : "unavailable")}.");
+            throw new DeskAvailabilityException(command.IsAvailable);
         
         desk.IsAvailable = command.IsAvailable;
         _deskRepository.Update(desk);

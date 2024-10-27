@@ -1,3 +1,4 @@
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,12 +17,15 @@ public class GlobalExceptionHandler : IExceptionHandler
             errors.AddRange(fluentException.Errors.Select(error => error.ErrorMessage));
             problemDetails.Extensions.Add("errors", errors);
         }
+        else if (exception is HotDeskBookingException bookingException)
+        {
+            httpContext.Response.StatusCode = Convert.ToInt32(bookingException.HttpStatusCode);
+            problemDetails.Title = exception.Message;
+        }
         else
         {
-            if (exception is ApplicationException)
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            
-            problemDetails.Title = exception.Message;
+            httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            problemDetails.Title = "Server failure";
         }
 
         httpContext.Response.ContentType = "application/problem+json";

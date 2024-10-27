@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Domain.Exceptions;
+using Domain.Exceptions.Users;
 using Domain.Users;
 using Microsoft.AspNetCore.Http;
 
@@ -10,13 +12,13 @@ public static class HttpContextExtensions
     {
         var user = httpContextAccessor.HttpContext?.User;
         if (user == null)
-            throw new ApplicationException("User not present");
+            throw new UserContextNotFoundException();
 
         var id = user.FindFirstValue(ClaimTypes.NameIdentifier!);
 
         return Guid.TryParse(id, out var parsedId)
             ? parsedId
-            : throw new ApplicationException("Invalid User ID format");
+            : throw new InvalidUserIdException(id);
     }
 
     public static bool HasRole(this IHttpContextAccessor httpContextAccessor, UserRole role)

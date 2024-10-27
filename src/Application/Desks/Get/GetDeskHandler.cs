@@ -1,6 +1,9 @@
 using Application.Dtos;
 using Application.Interfaces.CQRS;
 using Domain.Desks;
+using Domain.Exceptions;
+using Domain.Exceptions.Desks;
+using Domain.Exceptions.Locations;
 using Domain.Reservations;
 using Domain.Users;
 using Microsoft.AspNetCore.Http;
@@ -23,10 +26,10 @@ public class GetDeskHandler : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
     public async Task<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
     {
         var desk = await _deskRepository.GetById(query.Id, cancellationToken)
-                                 ?? throw new ApplicationException("desk not found");
+                                 ?? throw new DeskNotFoundException(query.Id);
 
         if (desk.LocationId != query.LocationId)
-            throw new ApplicationException("location not found");
+            throw new LocationNotFoundException(query.LocationId);
 
         var activeReservation =  desk.Reservations.FirstOrDefault();
         ReservationWithUserDto? reservation = null;

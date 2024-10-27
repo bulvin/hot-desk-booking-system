@@ -1,5 +1,8 @@
+using System.Security.Authentication;
 using Application.Interfaces;
 using Application.Interfaces.CQRS;
+using Domain.Exceptions;
+using Domain.Exceptions.Users;
 using Domain.Users;
 
 namespace Application.Users.Login;
@@ -23,12 +26,12 @@ public class LoginUserHandler : ICommandHandler<LoginUserCommand, string>
     {
         var user = await _repository.GetByEmail(request.Email, cancellationToken);
         if (user == null)
-            throw new ApplicationException("Email or password are invalid");
+            throw new InvalidCredentialsException();
 
         var verified = _passwordHasher.Verify(request.Password, user.Password);
         if (!verified)
-            throw new ApplicationException("Email or password are invalid");
-
+            throw new InvalidCredentialsException();
+        
         var token = _tokenProvider.GenerateToken(user);
         return token;
     }

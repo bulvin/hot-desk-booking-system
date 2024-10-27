@@ -2,6 +2,8 @@ using Application.Dtos;
 using Application.Interfaces.CQRS;
 using AutoMapper;
 using Domain;
+using Domain.Exceptions;
+using Domain.Exceptions.Locations;
 using Domain.Locations;
 
 namespace Application.Locations.Create;
@@ -35,7 +37,7 @@ public class CreateLocationHandler : ICommandHandler<CreateLocationCommand, Loca
         };
         
         if (await _repository.IsDuplicate(location: location, cancellationToken))
-            throw new ApplicationException("Location already exists");
+            throw new LocationAlreadyExistsException(location.Name, location.Address);
         
         _repository.Add(location);
         await _unitOfWork.SaveChanges(cancellationToken);

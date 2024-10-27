@@ -1,6 +1,8 @@
 using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Desks;
+using Domain.Exceptions;
+using Domain.Exceptions.Desks;
 using Domain.Locations;
 using Domain.Reservations;
 using MediatR;
@@ -26,11 +28,11 @@ public class DeleteDeskHandler : ICommandHandler<DeleteDeskCommand, Unit>
     public async Task<Unit> Handle(DeleteDeskCommand command, CancellationToken cancellationToken)
     {
         var desk = await _deskRepository.GetByIdAndLocation(command.DeskId, command.LocationId, cancellationToken)
-                       ?? throw new ApplicationException("Desk not found");
+                       ?? throw new DeskNotFoundException(command.DeskId);
 
         var hasReservation = await _reservationRepository.HasActiveReservationForDesk(desk.Id, cancellationToken);
         if (hasReservation)
-            throw new ApplicationException("Cannot delete desk as it has active reservation.");
+            throw new DeskHasActiveReservationException(command.DeskId);
         
         _deskRepository.Delete(desk);
         await _unitOfWork.SaveChanges(cancellationToken);
