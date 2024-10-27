@@ -17,15 +17,15 @@ public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<D
     }
     public async Task<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
     {
-        var page = query.PaginationFilter.Page ?? 1;
-        var pageSize = query.PaginationFilter.PageSize ?? 30;
-        var startDate = query.DateRange.StartDate ?? DateOnly.FromDateTime(DateTime.Today);
-        var endDate = query.DateRange.EndDate ?? DateOnly.FromDateTime(DateTime.Today);
+        var page = query.PaginationFilter?.Page ?? 1;
+        var pageSize = query.PaginationFilter?.PageSize ?? 30;
+        var startDate = query.DateRange?.StartDate ?? DateOnly.FromDateTime(DateTime.Today);
+        var endDate = query.DateRange?.EndDate ?? DateOnly.FromDateTime(DateTime.Today);
         
         var (desks, totalCount) = await _repository.GetDesksByLocation(
             query.LocationId,
-            query.DeskAvailabilityFilter.IsAvailable,
-            query.DeskAvailabilityFilter.IsBookable,
+            query.DeskAvailabilityFilter?.IsAvailable,
+            query.DeskAvailabilityFilter?.IsBookable,
             startDate,
             endDate,
             page,

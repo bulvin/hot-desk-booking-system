@@ -2,6 +2,9 @@ using Application.Dtos;
 using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Desks;
+using Domain.Exceptions;
+using Domain.Exceptions.Desks;
+using Domain.Exceptions.Locations;
 using Domain.Locations;
 
 namespace Application.Desks.Create;
@@ -27,7 +30,7 @@ public class CreateDeskHandler : ICommandHandler<CreateDeskCommand, DeskDto>
     public async Task<DeskDto> Handle(CreateDeskCommand command, CancellationToken cancellationToken)
     {
         var location = await _locationRepository.GetById(command.LocationId, cancellationToken)
-                       ?? throw new ApplicationException($"Location with id {command.LocationId} not found");
+                       ?? throw new LocationNotFoundException(command.LocationId);
 
         var desk = new Desk
         {
@@ -37,7 +40,7 @@ public class CreateDeskHandler : ICommandHandler<CreateDeskCommand, DeskDto>
         };
 
         if (location.Desks.Any(d => d.Name == desk.Name))
-            throw new ApplicationException("A desk with this name already exists");
+            throw new DeskInLocationAlreadyExistsException(command.Name);
         
         _deskRepository.Add(desk);
        
