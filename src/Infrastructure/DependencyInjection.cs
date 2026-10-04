@@ -14,7 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Npgsql;
 
 namespace Infrastructure;
 
@@ -50,19 +49,8 @@ public static class DependencyInjection
                 "ConnectionStrings:Database is required. Configure it using .NET User Secrets for development.");
         }
 
-        var databaseHost = configuration["Database:Host"];
-        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-        if (!string.IsNullOrWhiteSpace(databaseHost))
-        {
-            connectionStringBuilder.Host = databaseHost;
-        }
-
-        connectionString = connectionStringBuilder.ConnectionString;
-
-        services.AddDbContext<AppDbContext>(options =>
+        return services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
-
-        return services;
     }
 
     private static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
