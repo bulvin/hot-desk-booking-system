@@ -2,8 +2,6 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
@@ -36,7 +34,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-app.UseHttpsRedirection();
+
 app.UseExceptionHandler();
 
 await app.EnsureDatabaseCreated();

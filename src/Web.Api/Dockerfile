@@ -8,9 +8,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Web.Api/Web.Api.csproj", "Web.Api/"]
-COPY ["../Infrastructure/Infrastructure.csproj", "../Infrastructure/"]
-COPY ["../Application/Application.csproj", "../Application/"]
-COPY ["../Domain/Domain.csproj", "../Domain/"]
+COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
+COPY ["Application/Application.csproj", "Application/"]
+COPY ["Domain/Domain.csproj", "Domain/"]
 RUN dotnet restore "Web.Api/Web.Api.csproj"
 COPY . .
 WORKDIR "/src/Web.Api"

@@ -399,3 +399,7 @@ FodyWeavers.xsd
 src/.idea
 src/.idea/
 .containers/
+# Local development configuration and secrets
+/src/.env
+/src/.secrets/
+/src/.https/
