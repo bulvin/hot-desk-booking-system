@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Application.Desks.Get;
 using Application.Interfaces;
 using Domain.Desks;
+using Domain.Exceptions.Desks;
 using Domain.Reservations;
 using Domain.Users;
 using Infrastructure.Time;
@@ -42,20 +43,22 @@ public class GetDeskHandlerTests
     }
     
     [Fact]
-    public async Task Handle_WhenDeskNotFound_ThrowsApplicationException()
+    public async Task Handle_WhenDeskNotFound_ThrowsDeskNotFoundException()
     {
    
         var query = new GetDeskDetailsQuery(Guid.NewGuid(), Guid.NewGuid());
         
         _deskRepositoryMock
             .Setup(x => x.GetById(query.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Desk)null);
+            .ReturnsAsync((Desk?)null);
 
     
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<DeskNotFoundException>(
             () => _handler.Handle(query, CancellationToken.None));
         
-        Assert.Equal("desk not found", exception.Message);
+        Assert.Equal(query.Id, exception.Id);
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, exception.HttpStatusCode);
+        Assert.Equal($"Desk with ID {query.Id} was not found", exception.Message);
     }
 
     [Theory]

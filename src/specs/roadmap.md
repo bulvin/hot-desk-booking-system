@@ -1,14 +1,14 @@
-﻿# Refresh roadmap
+# Refresh roadmap
 
 Refresh the existing API on .NET 10 while retaining its architecture and 1-7-day booking model. See [mission.md](mission.md) and [tech-stack.md](tech-stack.md).
 
-Each phase is a small feature slice with 1-3 work items and a verifiable outcome. All phases are planned. Include relevant tests and documentation in the slice that changes the behavior; keep mechanical formatting separate. Review dependency compatibility, maintenance, security, and licensing when touching each package.
+Each phase is a small feature slice with 1-3 work items and a verifiable outcome. Phase 1 is implemented and validated; later phases are planned. Include relevant tests and documentation in the slice that changes the behavior; keep mechanical formatting separate. Review dependency compatibility, maintenance, security, and licensing when touching each package.
 
 ## Phase 1: Run the solution on .NET 10
 
-- [ ] Pin a reviewed .NET 10 SDK and retarget the API, libraries, and sibling test project.
-- [ ] Align framework packages, stable EF Core/Npgsql 10 packages, and EF tooling; review applicable .NET 9/10 breaking changes.
-- [ ] Verify restore, build, and existing tests; resolve migration-related failures.
+- [x] Pin a reviewed .NET 10 SDK and retarget the API, libraries, and sibling test project.
+- [x] Align framework packages, stable EF Core/Npgsql 10 packages, and EF tooling; review applicable .NET 9/10 breaking changes.
+- [x] Verify restore, build, and existing tests; resolve migration-related failures.
 
 Done when: the full solution builds and its tests run successfully on .NET 10 with a compatible dependency graph.
 
