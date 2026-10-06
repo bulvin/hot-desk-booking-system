@@ -1,6 +1,5 @@
 using Application.Dtos;
 using Application.Interfaces.CQRS;
-using AutoMapper;
 using Domain.Desks;
 
 namespace Application.Desks.GetPagedByLocation;
@@ -8,12 +7,10 @@ namespace Application.Desks.GetPagedByLocation;
 public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<DeskDto>>
 {
     private readonly IDeskRepository _repository;
-    private readonly IMapper _mapper;
 
-    public GetDesksHandler(IDeskRepository repository, IMapper mapper)
+    public GetDesksHandler(IDeskRepository repository)
     {
         _repository = repository;
-        _mapper = mapper;
     }
     public async Task<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
     {
@@ -32,7 +29,8 @@ public class GetDesksHandler : IQueryHandler<GetDesksByLocationQuery, PagedDto<D
             pageSize,
             cancellationToken);
      
-        var desksDtos = _mapper.Map<List<DeskDto>>(desks);
+        var desksDtos = desks.Select(desk => new DeskDto(
+            desk.Id, desk.Name, desk.Description, desk.LocationId, desk.IsAvailable)).ToList();
         return new PagedDto<DeskDto>(desksDtos, page, pageSize, totalCount);
     }
 }

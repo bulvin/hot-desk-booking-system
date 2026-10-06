@@ -1,7 +1,7 @@
 using Infrastructure.Data.Converters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
+using System.Text.Json.Nodes;
 
 namespace Web.Api.Extensions;
 
@@ -15,9 +15,9 @@ public static class ServiceCollectionExtensions
            
             o.MapType<DateOnly>(() => new OpenApiSchema
             {
-                Type = "string",
+                Type = JsonSchemaType.String,
                 Format = "date",
-                Default = new OpenApiString(DateOnly.FromDateTime(DateTime.Today).ToString(DateOnlyJsonConverter.Format))
+                Default = JsonValue.Create(DateOnly.FromDateTime(DateTime.Today).ToString(DateOnlyJsonConverter.Format))
             });
             
             var securityScheme = new OpenApiSecurityScheme
@@ -32,22 +32,14 @@ public static class ServiceCollectionExtensions
 
             o.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
 
-            var securityRequirement = new OpenApiSecurityRequirement
+            o.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = JwtBearerDefaults.AuthenticationScheme
-                        }
-                    },
+                    new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document),
                     []
                 }
-            };
+            });
             o.EnableAnnotations();
-            o.AddSecurityRequirement(securityRequirement);
         });
 
         return services;

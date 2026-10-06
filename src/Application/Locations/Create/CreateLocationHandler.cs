@@ -1,6 +1,5 @@
 using Application.Dtos;
 using Application.Interfaces.CQRS;
-using AutoMapper;
 using Domain;
 using Domain.Exceptions;
 using Domain.Exceptions.Locations;
@@ -14,13 +13,11 @@ public class CreateLocationHandler : ICommandHandler<CreateLocationCommand, Loca
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILocationRepository _repository;
-    private readonly IMapper _mapper;
     
-    public CreateLocationHandler(IUnitOfWork unitOfWork, ILocationRepository repository, IMapper mapper)
+    public CreateLocationHandler(IUnitOfWork unitOfWork, ILocationRepository repository)
     {
         _unitOfWork = unitOfWork;
         _repository = repository;
-        _mapper = mapper;
     }
     public async Task<LocationDto> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
     {
@@ -42,7 +39,9 @@ public class CreateLocationHandler : ICommandHandler<CreateLocationCommand, Loca
         _repository.Add(location);
         await _unitOfWork.SaveChanges(cancellationToken);
         
-        var locationDto = _mapper.Map<LocationDto>(location);
+        var locationDto = new LocationDto(location.Id, location.Name, new AddressDto(
+            location.Address.Street, location.Address.BuildingNumber,
+            location.Address.City, location.Address.PostalCode));
         return locationDto;
     }
 }

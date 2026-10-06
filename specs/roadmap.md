@@ -18,11 +18,13 @@ Done when: the API runs in Docker and database upgrades preserve existing data a
 
 ## Phase 3: Upgrade dependencies for .NET 10
 
-- [ ] Review and upgrade the supporting libraries for request checks, request handling, data conversion, API documentation, login, and testing.
-- [ ] Check compatibility, support, security, and licensing. Keep or replace libraries where appropriate, remove unused packages, and record the decisions.
-- [ ] Verify that requests, responses, login, access permissions, and Swagger still work as expected. Run the full test suite and check its reports.
+- [x] Review and upgrade the supporting libraries for request checks, request handling, data conversion, API documentation, login, and testing.
+- [x] Check compatibility, support, security, and licensing. Keep or replace libraries where appropriate, remove unused packages, and record the decisions.
+- [x] Verify that requests, responses, login, access permissions, and Swagger still work as expected. Run the full test suite and check its reports.
 
 Done when: the supporting libraries work with .NET 10, their review decisions are recorded, and the application and tests pass the migration checks.
+
+Completed 2026-10-06: [decisions](2026-10-06-net10-dependency-upgrades/plan.md) and [validation](2026-10-06-net10-dependency-upgrades/validation.md).
 
 ## Phase 4: Make formatting consistent
 

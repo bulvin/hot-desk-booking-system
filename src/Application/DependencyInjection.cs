@@ -1,6 +1,5 @@
 using Application.Behaviors;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;
@@ -16,7 +15,6 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
         
-        services.AddAutoMapper(assembly);
         services.AddValidatorsFromAssembly(assembly);
         return services;
     }

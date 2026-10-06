@@ -1,6 +1,5 @@
 using Application.Dtos;
 using Application.Interfaces.CQRS;
-using AutoMapper;
 using Domain;
 using Domain.Desks;
 using Domain.Exceptions;
@@ -17,15 +16,14 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
     private readonly IReservationRepository _reservationRepository;
     private readonly IDeskRepository _deskRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public BookDeskHandler(IReservationRepository repository, IUnitOfWork unitOfWork, IDeskRepository deskRepository, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+    public BookDeskHandler(IReservationRepository repository, IUnitOfWork unitOfWork, IDeskRepository deskRepository,
+        IHttpContextAccessor httpContextAccessor)
     {
         _reservationRepository = repository;
         _unitOfWork = unitOfWork;
         _deskRepository = deskRepository;
-        _mapper = mapper;
         _httpContextAccessor = httpContextAccessor;
     }
 
@@ -59,7 +57,8 @@ public class BookDeskHandler : ICommandHandler<BookDeskCommand, ReservationDto>
         _reservationRepository.Add(reservation);
         await _unitOfWork.SaveChanges(cancellationToken);
         
-        var reservationDto = _mapper.Map<ReservationDto>(reservation);
+        var reservationDto = new ReservationDto(
+            reservation.Id, reservation.StartDate, reservation.EndDate, reservation.Status);
         return reservationDto;
     }
 }
