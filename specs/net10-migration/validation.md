@@ -15,10 +15,10 @@ Run from the repository root after the final implementation changes:
 
 ```powershell
 dotnet --version
-dotnet restore src/hot-desk-booking-system.sln
-dotnet build src/hot-desk-booking-system.sln --configuration Release --no-restore --disable-build-servers -m:1
-dotnet test src/hot-desk-booking-system.sln --configuration Release --no-build --no-restore --logger trx --disable-build-servers -m:1
-dotnet list src/hot-desk-booking-system.sln package --include-transitive --no-restore
+dotnet restore hot-desk-booking-system.sln
+dotnet build hot-desk-booking-system.sln --configuration Release --no-restore --disable-build-servers -m:1
+dotnet test hot-desk-booking-system.sln --configuration Release --no-build --no-restore --logger trx --disable-build-servers -m:1
+dotnet list hot-desk-booking-system.sln package --include-transitive --no-restore
 git diff --check
 ```
 
@@ -55,7 +55,7 @@ The initial .NET 8 baseline compiled production projects but failed writing sibl
 
 Some reused MSBuild processes retained restricted access to test output/cache files. Final verification succeeded with `--disable-build-servers -m:1` and authorized access to the sibling tests directory. This was an execution-environment issue, not a project workaround.
 
-AutoMapper's existing high-severity advisory is not suppressed or fixed by this slice. Track remediation in Phase 5 before treating the application as production-ready. See the dependency decisions in [requirements.md](requirements.md).
+AutoMapper's existing high-severity advisory is not suppressed or fixed by this slice. Track remediation in Phase 3 before treating the application as production-ready. See the dependency decisions in [requirements.md](requirements.md).
 
 ## Merge gate
 
