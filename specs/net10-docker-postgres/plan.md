@@ -1,11 +1,5 @@
 # Plan: Run .NET 10 with PostgreSQL in Docker
 
-Status: implemented and validated on 2026-10-06.
-
-Roadmap: [Phase 2](../roadmap.md#phase-2-run-the-upgraded-api-with-postgresql-in-docker).
-Branch: `chore/net10-docker-postgres`.
-Base: `chore/net10-migration` at `01b22e0`.
-
 ## Scope and decisions
 
 Make the migrated API build and run in Docker with PostgreSQL, verify existing migrations and retained data, and document reproducible local startup. Keep the existing architecture and booking behavior.
@@ -41,34 +35,3 @@ Done when: fresh and retained-data scenarios both start successfully, existing r
 - [x] Re-run Release build and existing tests, record container/database/HTTP results here, and mark roadmap Phase 2 complete only after the checks pass.
 
 Done when: a developer can reproduce container startup, authentication and an actual database-backed API request work without assembly/version errors, and regression tests remain passing.
-
-## Evidence and completion checklist
-
-| Check | Result |
-| --- | --- |
-| Selected SDK/runtime/PostgreSQL images and rationale | Tags sdk:10.0, aspnet:10.0, and postgres:18 follow the requested version policy. Original runtime verification used SDK 10.0.400, runtime 10.0.11, and PostgreSQL 18.6; those numbers record evidence, not version pins. |
-| Clean container build and effective SDK/runtime versions | PASS: no-cache build; SDK 10.0.400; runtime 10.0.11; uid/gid 1654; HTTP port 8080; filtered build context 246.88 kB. |
-| Fresh database migration and seeding | PASS: PostgreSQL 18.6 initialized through startup, six migrations, seeded roles/admin; no model or assembly error. |
-| PostgreSQL 17-to-18 logical migration and before/after comparison | PASS: synthetic fixture created through old .NET 8 API on PostgreSQL 17; PostgreSQL 18 pg_dump/pg_restore into separate database; counts and row-content hashes match across all seven tables. |
-| Repeated startup and persistence | PASS: PostgreSQL 18 and both new APIs restarted; all seven table hashes unchanged; Swagger still responds. |
-| Swagger and HTTP authentication/database smoke checks | PASS: Swagger/login/registration/list 200, location/desk creation 201, unauthenticated list 401. Migrated employee login and retained reservation ID/dates work; employee response hides reserver identity. |
-| Release build and existing tests | PASS: Release build and 3/3 tests; zero failures/skips. TRX: tests/UnitTests/TestResults/Janek_DESKTOP-JANEK_2026-10-06_13_54_30_net10.0.trx. Existing AutoMapper/nullable warnings remain. |
-| Documented startup reproduced | PASS: Compose configuration validated and started with generated test credentials, an isolated volume, and alternate port; Swagger 200. See ../../docs/docker-development.md for local setup and migration commands. |
-
-Completion requires all checks above to pass with evidence. A successful image build alone is insufficient. Keep this work based on the migration branch; merge the combined refresh into `main` only when explicitly requested. This phase does not resolve the separately tracked AutoMapper vulnerability or establish full production readiness.
-
-## Upgrade references
-
-- [PostgreSQL 18 release and migration notes](https://www.postgresql.org/docs/release/18.0/).
-- [Official PostgreSQL Docker image and version 18 storage layout](https://hub.docker.com/_/postgres).
-
-Do not start PostgreSQL 18 on a PostgreSQL 17 data directory. The major-version data upgrade is separate from EF schema migrations; verify both. Keep the original 17 database intact until the restored 18 database has passed verification.
-
-## Implementation evidence and limits
-
-- Docker build context now includes the root SDK policy through a Dockerfile-specific allowlist. Local database/secrets directories are excluded.
-- Compose retains project hot_desk_booking and image web.api, generated service names, loopback host ports, and separate .containers/db18 storage mounted at /var/lib/postgresql.
-- Fixture contained 1 desk, 1 location, 1 reservation, 2 roles, 2 user-role links, 2 users, and 6 migration-history records. Compared full row-content hashes before/after restore and restart, not just counts.
-- Verification used synthetic data, not a copy of company data. The original web.api/postgres containers and PostgreSQL 17 bind mount were not modified.
-- No production C# or schema changes were required. The existing development seeder, AutoMapper advisory, and ephemeral Data Protection key warnings remain follow-ups; no production-readiness claim is made.
-- [Startup and 17-to-18 migration guide](../../docs/docker-development.md).

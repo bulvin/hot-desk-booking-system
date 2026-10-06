@@ -76,7 +76,7 @@ Check Swagger JSON (`/swagger/v1/swagger.json`), registration/login, an authenti
 
 ```powershell
 docker compose restart postgres web-api
-dotnet test hot-desk-booking-system.sln --configuration Release --disable-build-servers -m:1
+dotnet test hot-desk-booking-system.slnx --configuration Release --disable-build-servers -m:1
 docker compose down
 ```
 

@@ -1,100 +1,121 @@
 # Roadmap
 
-## Phase 1: Run the solution on .NET 10
+## Phase 1: Migrate the solution to .NET 10 — complete
 
-- [x] Move the application and tests to .NET 10 and choose a shared SDK version.
-- [x] Update the main framework and database libraries to compatible stable versions.
-- [x] Build the solution, run existing tests, and fix problems caused by the upgrade.
+- [x] Retarget all production/test projects and configure the shared SDK.
+- [x] Align framework and EF/Npgsql dependencies; fix migration-related build/test failures.
 
-Done when: the full solution builds and existing tests pass on .NET 10.
+Done when: solution restore, Release build, and existing tests pass. [Evidence](net10-migration/validation.md).
 
-## Phase 2: Run the upgraded API and database in Docker
+## Phase 2: Upgrade Docker and PostgreSQL — complete
 
-- [x] Update the .NET containers and upgrade PostgreSQL from 17 to 18.
-- [x] Check database setup and transfer existing data using disposable test databases.
-- [x] Check that the API starts, accepts a request from a signed-in user, and has documented setup steps.
+- [x] Run .NET 10 containers with PostgreSQL 18 and its required data-directory layout.
+- [x] Verify fresh startup, PostgreSQL 17-to-18 logical migration, retained records, and authenticated API requests.
+- [x] Document local configuration and migration steps.
 
-Done when: the API runs in Docker and database upgrades preserve existing data and the record of earlier database changes.
+Done when: container startup and migration checks pass without losing data/history. [Evidence](net10-docker-postgres/plan.md). Recorded migration checks used synthetic data.
 
-## Phase 3: Upgrade dependencies for .NET 10
+## Phase 3: Refresh application dependencies — complete
 
-- [x] Review and upgrade the supporting libraries for request checks, request handling, data conversion, API documentation, login, and testing.
-- [x] Check compatibility, support, security, and licensing. Keep or replace libraries where appropriate, remove unused packages, and record the decisions.
-- [x] Verify that requests, responses, login, access permissions, and Swagger still work as expected. Run the full test suite and check its reports.
+- [x] Upgrade validation, authentication, Swagger, and test packages; retain reviewed MediatR 12 and replace AutoMapper with explicit mapping.
+- [x] Verify dispatch, validation, mappings, authentication, authorization, and HTTP contracts; record package/security/license decisions.
 
-Done when: the supporting libraries work with .NET 10, their review decisions are recorded, and the application and tests pass the migration checks.
+Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass. [Decisions](2026-10-06-net10-dependency-upgrades/plan.md) and [evidence](2026-10-06-net10-dependency-upgrades/validation.md).
 
-Completed 2026-10-06: [decisions](2026-10-06-net10-dependency-upgrades/plan.md) and [validation](2026-10-06-net10-dependency-upgrades/validation.md).
+## Phase 4: Standardize formatting
 
-## Phase 4: Make formatting consistent
+- [ ] Add root `.editorconfig` for C# indentation, whitespace, line endings, and naming conventions shared by `src` and `tests`.
+- [ ] Apply a formatting-only change to handwritten code; preserve generated migrations.
+- [ ] Document and run `dotnet format hot-desk-booking-system.slnx --verify-no-changes`.
 
-- [ ] Define shared formatting rules for application and test code.
-- [ ] Apply formatting in a separate change.
-- [ ] Add a repeatable check for formatting.
+Done when: the formatting check passes and the diff contains no behavior changes.
 
-Done when: the whole solution follows the same formatting rules and passes the check.
+## Phase 5: Configure static analysis
 
-## Phase 5: Add automated code checks
+- [ ] Add root shared build settings with an explicit .NET 10 analyzer level and selected build-time style diagnostics.
+- [ ] Inventory actionable findings by rule, recording narrow exclusions for generated code.
 
-- [ ] Choose useful checks that catch potential mistakes and unclear code before the application runs.
-- [ ] Fix the findings in small groups and explain any exceptions.
-- [ ] Add extra checking tools only when they solve a clear problem.
+Done when: Release builds report the same selected diagnostics for production and tests; any existing findings are explicitly listed for Phase 6.
 
-Done when: the agreed checks cover application and test code, with findings fixed or explained.
+## Phase 6: Resolve findings and enforce warnings
 
-Shared settings must cover both the application in `src` and the tests in `tests/UnitTests`.
+- [ ] Fix nullable/correctness findings in small batches, starting with nullable pagination access in GetDesksValidator; preserve request behavior unless a fix is explicitly specified.
+- [ ] Enable warnings-as-errors for the agreed rules after the baseline is clean; explain each remaining suppression.
 
-## Phase 6: Run quality checks automatically
+Done when: Release build and tests pass with the selected warnings enforced and no blanket suppressions hiding findings.
 
-- [ ] Set up CI: automated checks that build the application and run tests when code changes are submitted.
-- [ ] Include formatting and the agreed code checks, and publish test results.
-- [ ] Confirm that a change breaking these rules fails the automated checks.
+## Phase 7: Add CI quality gates
 
-Done when: a fresh copy of the project passes the same checks locally and in CI.
+- [ ] Run restore, Release build, tests, and formatting checks using the repository SDK policy.
+- [ ] Publish TRX/coverage artifacts and verify that a deliberate formatting or analyzer violation fails CI.
 
-## Phase 7: Make booking dates consistent
+Done when: a clean checkout passes the documented local commands and the same checks in CI.
 
-- [ ] Agree on the company's timezone, how far ahead people can book, and the deadline for changing desks.
-- [ ] Use a consistent source of time that can also be controlled in tests.
-- [ ] Test one-to-seven-day bookings, past dates, and the exact points where deadlines apply.
+## Phase 8: Define and centralize booking dates
 
-Done when: date rules are clear and tests give repeatable results while preserving the agreed booking model.
+- [ ] Decide business timezone and desk-change cutoff; document start-date horizon and inclusive 1-7-day duration.
+- [ ] Use one controllable time source in booking validators, desk-list defaults, and desk-change checks.
+- [ ] Test midnight/date boundaries, past dates, maximum duration, and cutoff equality.
 
-## Phase 8: Make desk search reliable
+Done when: date-dependent behavior is deterministic and matches the documented decisions.
 
-- [ ] Check search filters, date ranges, and limits on the number of results returned at once.
-- [ ] Make sure search respects reservation status and the agreed rules for disabled desks.
-- [ ] Test search results using PostgreSQL.
+## Phase 9: Validate desk-search inputs
 
-Done when: searches return the correct available desks for every day in the requested range.
+- [ ] Define and enforce null/default filters, page >= 1, page size 1-30, and valid start/end combinations.
+- [ ] Test GetDesksHandler defaults and invalid requests through the validation pipeline.
 
-## Phase 9: Make desk changes safe
+Done when: omitted filters work and invalid pagination/date ranges return validation errors rather than exceptions or misleading results.
 
-- [ ] Check that the replacement desk is available and has no overlapping active bookings.
-- [ ] Check reservation ownership, status, and the agreed deadline for changes.
-- [ ] Test changes that should succeed and changes that should be rejected.
+## Phase 10: Correct desk availability queries
 
-Done when: changing desks follows the same availability rules as making a booking.
+- [ ] Define enabled versus bookable filter semantics and make reservation status explicit in overlap predicates.
+- [ ] Add PostgreSQL-backed cases for inclusive overlap boundaries, disabled desks, and canceled/completed reservations.
 
-## Phase 10: Prevent double booking
+Done when: listing results and counts consistently reflect availability across the requested range.
 
-- [ ] Add a database safeguard that prevents overlapping active bookings, including when someone changes desks.
-- [ ] Return a clear, consistent response when a booking conflicts with another reservation.
-- [ ] Automatically test people trying to book the same desk at the same time, using a disposable database.
+## Phase 11: Enforce desk-change rules
 
-Done when: two conflicting requests cannot both reserve the same desk for overlapping dates.
+- [ ] Check ownership, reservation status, the agreed cutoff, and target desk availability/overlap before updating.
+- [ ] Cover accepted changes and each rejection path with regression tests.
 
-## Phase 11: Make reservation responses predictable
+Done when: moving a reservation obeys the same availability guarantees as creating one.
 
-- [ ] Check reservation privacy, clear error responses, and links returned for newly created reservations.
-- [ ] Define and test what happens when a desk or location with reservation history is deleted.
+## Phase 12: Prevent concurrent overlapping bookings
 
-Done when: responses are consistent and reservation history does not cause unexpected database errors.
+- [ ] Add a PostgreSQL safeguard for overlapping active reservations covering both creation and desk changes.
+- [ ] Translate database conflicts to a consistent HTTP conflict response.
+- [ ] Test simultaneous requests against disposable PostgreSQL, including a booking racing with a desk change.
 
-## Phase 12: Make ongoing maintenance easier
+Done when: conflicting requests cannot both succeed and rejected operations leave valid data.
 
-- [ ] Set up regular library update suggestions and checks for security issues or unsupported packages.
-- [ ] Add automated database-upgrade and desk-search tests alongside the double-booking tests.
-- [ ] Update setup instructions and library decisions, then check that a fresh copy of the project starts successfully.
+## Phase 13: Normalize HTTP resource responses
 
-Done when: maintenance checks are repeatable and a returning developer can start and verify the project from the documentation.
+- [ ] Review Created URLs, existing resource routes, Problem Details, and reservation identity visibility.
+- [ ] Add focused HTTP tests for success/error statuses and employee/admin response differences.
+
+Done when: existing endpoints follow documented response contracts; unresolved resource links are explicitly addressed without silently adding new endpoints.
+
+## Phase 14: Preserve reservation history during deletion
+
+- [ ] Decide how active/historical reservations affect desk deletion and how contained desks affect location deletion.
+- [ ] Implement the agreed behavior and test foreign-key constraints and error responses with PostgreSQL.
+
+Done when: deletion has predictable outcomes and does not lose history or expose unhandled database errors.
+
+## Phase 15: Automate database regression checks
+
+- [ ] Run migration, availability-query, and concurrency checks in CI with isolated PostgreSQL 18.
+- [ ] Publish failure evidence and clean up only the resources created by the checks.
+
+Done when: CI detects database regressions without depending on a developer's database.
+
+## Phase 16: Automate dependency maintenance
+
+- [ ] Configure scheduled dependency update proposals and vulnerability/deprecation checks, with a documented review policy.
+- [ ] Reproduce the documented local startup and verification steps from a clean checkout.
+
+Done when: dependency review is repeatable and setup instructions match the actual application.
+
+## After the refresh
+
+Plan new endpoints separately: location browsing/editing and reservation listing/retrieval/cancellation. Frontend, multi-company tenancy, hourly/recurring bookings, notifications, reporting, and production deployment require separate scope decisions.

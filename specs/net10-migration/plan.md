@@ -1,7 +1,5 @@
 # Plan: .NET 10 migration
 
-Status: implemented and validated on 2026-10-06. Each numbered group has at most three tasks. Scope is defined in [requirements.md](requirements.md); verification evidence belongs in [validation.md](validation.md).
-
 ## 1. Select a compatible upgrade set
 
 - [x] Inspect current project/package references and run the existing build/tests to distinguish pre-existing failures from migration failures.
