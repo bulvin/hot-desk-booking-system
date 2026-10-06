@@ -2,7 +2,7 @@
 
 Refresh the existing API on .NET 10 while retaining its architecture and 1-7-day booking model. See [mission.md](mission.md) and [tech-stack.md](tech-stack.md).
 
-Each phase is a small feature slice with 1-3 work items and a verifiable outcome. Phase 1 is implemented and validated; later phases are planned. Include relevant tests and documentation in the slice that changes the behavior; keep mechanical formatting separate. Review dependency compatibility, maintenance, security, and licensing when touching each package.
+Each phase is a small feature slice with 1-3 work items and a verifiable outcome. Phases 1 and 2 are implemented and validated on the refresh branches; later phases are planned. Include relevant tests and documentation in the slice that changes the behavior; keep mechanical formatting separate. Review dependency compatibility, maintenance, security, and licensing when touching each package.
 
 ## Phase 1: Run the solution on .NET 10
 
@@ -14,9 +14,9 @@ Done when: the full solution builds and its tests run successfully on .NET 10 wi
 
 ## Phase 2: Run the upgraded API with PostgreSQL in Docker
 
-- [ ] Update .NET SDK/runtime container images and review the PostgreSQL image patch level.
-- [ ] Verify migrations on a fresh database and a disposable copy containing existing data.
-- [ ] Smoke-test container startup and an authenticated request; document local startup configuration.
+- [x] Update .NET SDK/runtime container images and upgrade PostgreSQL 17 to a reviewed stable PostgreSQL 18 image, including its volume layout.
+- [x] Verify EF migrations on fresh PostgreSQL 18 and a disposable PostgreSQL 17-to-18 logical migration containing existing data.
+- [x] Smoke-test container startup and an authenticated request; document local startup configuration.
 
 Done when: the containerized API runs and migrations preserve existing data and migration history.
 

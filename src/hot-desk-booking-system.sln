@@ -11,6 +11,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A811FC88-0361-45E5-BAD1-4194EE91F726}"
 	ProjectSection(SolutionItems) = preProject
 		..\.gitignore = ..\.gitignore
+		specs\mission.md = specs\mission.md
+		specs\roadmap.md = specs\roadmap.md
+		specs\tech-stack.md = specs\tech-stack.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{F19E58AE-2D81-4C42-AC54-125B53AD9531}"
