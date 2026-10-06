@@ -13,14 +13,14 @@ Done when: solution restore, Release build, and existing tests pass. [Evidence](
 - [x] Verify fresh startup, PostgreSQL 17-to-18 logical migration, retained records, and authenticated API requests.
 - [x] Document local configuration and migration steps.
 
-Done when: container startup and migration checks pass without losing data/history. [Evidence](net10-docker-postgres/plan.md). Recorded migration checks used synthetic data.
+Done when: container startup and migration checks pass without losing data/history. [Plan](net10-docker-postgres/plan.md). Migration checks used synthetic data.
 
 ## Phase 3: Refresh application dependencies — complete
 
 - [x] Upgrade validation, authentication, Swagger, and test packages; retain reviewed MediatR 12 and replace AutoMapper with explicit mapping.
 - [x] Verify dispatch, validation, mappings, authentication, authorization, and HTTP contracts; record package/security/license decisions.
 
-Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass. [Decisions](2026-10-06-net10-dependency-upgrades/plan.md) and [evidence](2026-10-06-net10-dependency-upgrades/validation.md).
+Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass. [Plan](2026-10-06-net10-dependency-upgrades/plan.md) and [results](2026-10-06-net10-dependency-upgrades/validation.md).
 
 ## Phase 4: Standardize formatting
 
@@ -39,7 +39,7 @@ Done when: Release builds report the same selected diagnostics for production an
 
 ## Phase 6: Resolve findings and enforce warnings
 
-- [ ] Fix nullable/correctness findings in small batches, starting with nullable pagination access in GetDesksValidator; preserve request behavior unless a fix is explicitly specified.
+- [ ] Fix nullable/correctness findings in small batches, starting with nullable pagination access in `GetDesksValidator`.
 - [ ] Enable warnings-as-errors for the agreed rules after the baseline is clean; explain each remaining suppression.
 
 Done when: Release build and tests pass with the selected warnings enforced and no blanket suppressions hiding findings.
@@ -93,7 +93,7 @@ Done when: conflicting requests cannot both succeed and rejected operations leav
 - [ ] Review Created URLs, existing resource routes, Problem Details, and reservation identity visibility.
 - [ ] Add focused HTTP tests for success/error statuses and employee/admin response differences.
 
-Done when: existing endpoints follow documented response contracts; unresolved resource links are explicitly addressed without silently adding new endpoints.
+Done when: existing endpoints follow documented response contracts and Created URLs point to implemented routes.
 
 ## Phase 14: Preserve reservation history during deletion
 

@@ -1,6 +1,6 @@
 ﻿# Tech stack
 
-This file explains the main technologies in plain language. For what the product does, see [product.md](product.md). For the order of planned work, see [roadmap.md](roadmap.md).
+See [mission.md](mission.md) for the product scope and [roadmap.md](roadmap.md) for planned work.
 
 ## Main technologies
 
@@ -14,7 +14,7 @@ This file explains the main technologies in plain language. For what the product
 | Swagger | Shows the available API actions and lets developers try them |
 | xUnit and Moq | Test booking rules and other application behavior |
 
-Exact package versions belong in the project files. Choose them during implementation after checking compatibility, support, security, and licensing.
+Package versions are defined in the project files; the SDK version is defined in `global.json`.
 
 ## How the code is organized
 

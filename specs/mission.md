@@ -26,8 +26,6 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 | Change a reservation | Owners can change the desk; target availability/overlap checks still need completion |
 | Inspect reservations | Desk details expose reservation information with employee identity restricted to administrators; dedicated reservation listing/get/cancel endpoints are absent |
 
-This is current source coverage, not a claim that all workflows are complete. The dependency refresh records 14 passing tests and HTTP smoke checks in its [validation report](2026-10-06-net10-dependency-upgrades/validation.md).
-
 ## Agreed booking rules
 
 - Start and end dates are inclusive. Equal dates mean a one-day booking; the maximum is seven days.
@@ -37,16 +35,12 @@ This is current source coverage, not a claim that all workflows are complete. Th
 - Concurrent requests must not create overlapping active reservations for the same desk. A database safeguard is still required.
 - Employees must not receive another employee's identity through reservation details; administrator access is intentional.
 
-The last three rules are acceptance criteria to preserve or complete, not assurances supplied by the current test suite.
-
 ## Decisions required before related implementation
 
 - Define the business timezone used to determine today and booking cutoffs.
 - Clarify the desk-change cutoff: the current code compares dates after adding 24 hours to the current server time.
 - Decide whether an employee may hold multiple desk reservations for the same day.
 - Define how completed/canceled reservations affect availability and deletion of desks with history.
-
-Do not introduce new booking restrictions implicitly while upgrading infrastructure or fixing code warnings.
 
 ## Success criteria for the refresh
 
