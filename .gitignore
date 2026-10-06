@@ -403,3 +403,7 @@ src/.idea/
 /src/.env
 /src/.secrets/
 /src/.https/
+.secrets
+.https
+.idea
+.run
