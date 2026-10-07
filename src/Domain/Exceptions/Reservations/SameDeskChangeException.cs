@@ -2,15 +2,10 @@ using System.Net;
 
 namespace Domain.Exceptions.Reservations;
 
-public class SameDeskChangeException : HotDeskBookingException
+public class SameDeskChangeException(Guid deskId)
+    : HotDeskBookingException($"Cannot change reservation to the same desk {deskId}")
 {
-    public Guid Id { get; }
-
-    public SameDeskChangeException(Guid deskId) 
-        : base($"Cannot change reservation to the same desk {deskId}")
-    {
-        Id = deskId;
-    }
+    public Guid Id { get; } = deskId;
 
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.BadRequest;
 }

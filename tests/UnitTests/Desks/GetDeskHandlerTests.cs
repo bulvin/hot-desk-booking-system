@@ -1,6 +1,5 @@
 using System.Security.Claims;
-using Application.Desks.Get;
-using Application.Interfaces;
+using Application.Desks.GetDetails;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Reservations;
@@ -18,7 +17,7 @@ public class GetDeskHandlerTests
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<HttpContext> _httpContextMock;
     private readonly Mock<ClaimsPrincipal> _userMock;
-    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly DateTimeProvider _dateTimeProvider;
     private readonly GetDeskHandler _handler;
 
     public GetDeskHandlerTests()
@@ -28,10 +27,10 @@ public class GetDeskHandlerTests
         _httpContextMock = new Mock<HttpContext>();
         _userMock = new Mock<ClaimsPrincipal>();
         _dateTimeProvider = new DateTimeProvider { UtcNow = DateTime.UtcNow };
-        
+
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(_httpContextMock.Object);
         _httpContextMock.Setup(x => x.User).Returns(_userMock.Object);
-        
+
         _handler = new GetDeskHandler(_httpContextAccessorMock.Object, _deskRepositoryMock.Object);
     }
 
@@ -41,29 +40,29 @@ public class GetDeskHandlerTests
             .Setup(x => x.IsInRole(UserRole.Administrator.ToString()))
             .Returns(isAdmin);
     }
-    
+
     [Fact]
     public async Task Handle_WhenDeskNotFound_ThrowsDeskNotFoundException()
     {
-   
+
         var query = new GetDeskDetailsQuery(Guid.NewGuid(), Guid.NewGuid());
-        
+
         _deskRepositoryMock
             .Setup(x => x.GetById(query.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Desk?)null);
 
-    
+
         var exception = await Assert.ThrowsAsync<DeskNotFoundException>(
             () => _handler.Handle(query, CancellationToken.None));
-        
+
         Assert.Equal(query.Id, exception.Id);
         Assert.Equal(System.Net.HttpStatusCode.NotFound, exception.HttpStatusCode);
         Assert.Equal($"Desk with ID {query.Id} was not found", exception.Message);
     }
 
     [Theory]
-    [InlineData(true)]  
-    [InlineData(false)] 
+    [InlineData(true)]
+    [InlineData(false)]
     public async Task Handle_WithActiveReservation_ReturnsCorrectDeskDetails(bool isAdmin)
     {
         var deskId = Guid.NewGuid();
@@ -81,8 +80,8 @@ public class GetDeskHandlerTests
         {
             Id = reservationId,
             UserId = userId,
-            User = new User 
-            { 
+            User = new User
+            {
                 Id = userId,
                 FirstName = "John",
                 LastName = "Doe"
@@ -99,17 +98,17 @@ public class GetDeskHandlerTests
             Name = "Test Desk",
             Description = "Test Description",
             IsAvailable = true,
-            Reservations = new List<Reservation> { reservation }
+            Reservations = { reservation }
         };
 
         _deskRepositoryMock
             .Setup(x => x.GetById(query.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(desk);
 
-       
+
         var result = await _handler.Handle(query, CancellationToken.None);
 
-       
+
         Assert.NotNull(result);
         Assert.Equal(deskId, result.Id);
         Assert.Equal(locationId, result.LocationId);

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Api.Infrastructure;
 
-public class GlobalExceptionHandler : IExceptionHandler
+internal sealed class GlobalExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
@@ -19,7 +19,7 @@ public class GlobalExceptionHandler : IExceptionHandler
         }
         else if (exception is HotDeskBookingException bookingException)
         {
-            httpContext.Response.StatusCode = Convert.ToInt32(bookingException.HttpStatusCode);
+            httpContext.Response.StatusCode = (int)bookingException.HttpStatusCode;
             problemDetails.Title = exception.Message;
         }
         else
@@ -30,7 +30,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         httpContext.Response.ContentType = "application/problem+json";
         problemDetails.Status = httpContext.Response.StatusCode;
-        
+
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken).ConfigureAwait(false);
         return true;
     }

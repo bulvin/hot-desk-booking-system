@@ -13,10 +13,3 @@ public class Reservation : Entity
     public DateOnly EndDate { get; set; }
     public Status Status { get; set; } = Status.Reserved;
 }
-
-public enum Status
-{
-    Reserved,
-    Completed,
-    Canceled
-}

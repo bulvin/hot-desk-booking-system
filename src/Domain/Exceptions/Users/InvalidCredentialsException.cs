@@ -2,12 +2,7 @@ using System.Net;
 
 namespace Domain.Exceptions.Users;
 
-public class InvalidCredentialsException : HotDeskBookingException
+public class InvalidCredentialsException() : HotDeskBookingException("Invalid email or password")
 {
-    public InvalidCredentialsException() 
-        : base("Invalid email or password")
-    {
-    }
-
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.BadRequest;
 }

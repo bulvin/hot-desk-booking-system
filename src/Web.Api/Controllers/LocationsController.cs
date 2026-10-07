@@ -11,15 +11,8 @@ namespace Web.Api.Controllers;
 [Route("api/locations")]
 [ApiController]
 [Authorize(Policy = PolicyNames.Admin)]
-public class LocationsController : ControllerBase
+public class LocationsController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public LocationsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-    
     [HttpPost]
     [SwaggerOperation(
         Summary = "Create location"
@@ -29,8 +22,8 @@ public class LocationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult> CreateLocation(CreateLocationCommand request)
     {
-        var response = await _mediator.Send(request);
-        return Created($"/locations/{response.Id}", response);
+        var response = await mediator.Send(request);
+        return Created(new Uri($"/locations/{response.Id}", UriKind.Relative), response);
     }
 
     [HttpDelete("{id:guid}")]
@@ -42,7 +35,7 @@ public class LocationsController : ControllerBase
     public async Task<ActionResult> DeleteLocation(Guid id)
     {
         var command = new DeleteLocationCommand(id);
-        await _mediator.Send(command);
+        await mediator.Send(command);
         return NoContent();
     }
 }

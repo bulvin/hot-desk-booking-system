@@ -10,15 +10,8 @@ namespace Web.Api.Controllers;
 [Route("api/reservations")]
 [ApiController]
 [Authorize]
-public class ReservationsController : ControllerBase
+public class ReservationsController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public ReservationsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpPost]
     [SwaggerOperation(
         Summary = "Book a desk"
@@ -27,8 +20,8 @@ public class ReservationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult> BookDesk([FromBody] BookDeskCommand request)
     {
-        var response = await _mediator.Send(request);
-        return Created($"/reservations/{response.Id}", response);
+        var response = await mediator.Send(request);
+        return Created(new Uri($"/reservations/{response.Id}", UriKind.Relative), response);
     }
 
     [HttpPut("{id:guid}/change-desk")]
@@ -41,7 +34,7 @@ public class ReservationsController : ControllerBase
     public async Task<ActionResult> ChangeDesk(Guid id, [FromBody] ChangeDeskCommand command)
     {
         command = command with { Id = id };
-        await _mediator.Send(command);
+        await mediator.Send(command);
         return NoContent();
     }
 }

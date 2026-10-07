@@ -5,7 +5,7 @@
 - [x] Retarget all production/test projects and configure the shared SDK.
 - [x] Align framework and EF/Npgsql dependencies; fix migration-related build/test failures.
 
-Done when: solution restore, Release build, and existing tests pass. [Evidence](net10-migration/validation.md).
+Done when: solution restore, Release build, and existing tests pass.
 
 ## Phase 2: Upgrade Docker and PostgreSQL — complete
 
@@ -13,36 +13,38 @@ Done when: solution restore, Release build, and existing tests pass. [Evidence](
 - [x] Verify fresh startup, PostgreSQL 17-to-18 logical migration, retained records, and authenticated API requests.
 - [x] Document local configuration and migration steps.
 
-Done when: container startup and migration checks pass without losing data/history. [Plan](net10-docker-postgres/plan.md). Migration checks used synthetic data.
+Done when: container startup and migration checks pass without losing data/history.
 
 ## Phase 3: Refresh application dependencies — complete
 
 - [x] Upgrade validation, authentication, Swagger, and test packages; retain reviewed MediatR 12 and replace AutoMapper with explicit mapping.
 - [x] Verify dispatch, validation, mappings, authentication, authorization, and HTTP contracts; record package/security/license decisions.
 
-Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass. [Plan](2026-10-06-net10-dependency-upgrades/plan.md) and [results](2026-10-06-net10-dependency-upgrades/validation.md).
+Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass.
 
-## Phase 4: Standardize formatting
+## Phase 4: Standardize formatting — complete
 
-- [ ] Add root `.editorconfig` for C# indentation, whitespace, line endings, and naming conventions shared by `src` and `tests`.
-- [ ] Apply a formatting-only change to handwritten code; preserve generated migrations.
-- [ ] Document and run `dotnet format hot-desk-booking-system.slnx --verify-no-changes`.
+- [x] Add root `.editorconfig` for C# indentation, whitespace, line endings, and naming conventions shared by `src` and `tests`.
+- [x] Apply a formatting-only change to handwritten code; preserve generated migrations.
+- [x] Document and run `dotnet format hot-desk-booking-system.slnx --verify-no-changes` with the selected style diagnostics and migration exclusion.
 
 Done when: the formatting check passes and the diff contains no behavior changes.
 
-## Phase 5: Configure static analysis
+## Phase 5: Configure static analysis — complete
 
-- [ ] Add root shared build settings with an explicit .NET 10 analyzer level and selected build-time style diagnostics.
-- [ ] Inventory actionable findings by rule, recording narrow exclusions for generated code.
+- [x] Add root shared build settings with an explicit .NET 10 analyzer level and selected build-time style diagnostics.
+- [x] Inventory actionable findings by rule, recording narrow exclusions for generated code.
 
 Done when: Release builds report the same selected diagnostics for production and tests; any existing findings are explicitly listed for Phase 6.
 
-## Phase 6: Resolve findings and enforce warnings
+## Phase 6: Resolve findings and enforce warnings — complete
 
-- [ ] Fix nullable/correctness findings in small batches, starting with nullable pagination access in `GetDesksValidator`.
-- [ ] Enable warnings-as-errors for the agreed rules after the baseline is clean; explain each remaining suppression.
+- [x] Fix nullable/correctness findings in small batches, starting with nullable pagination access in `GetDesksValidator`.
+- [x] Enable `TreatWarningsAsErrors` after the baseline is clean; explain each remaining suppression in `.editorconfig`.
 
 Done when: Release build and tests pass with the selected warnings enforced and no blanket suppressions hiding findings.
+
+Validation: Release build has zero warnings/errors; all 21 tests pass, including optional pagination, cancellation forwarding, JWT issuer/audience checks, and EF model compatibility. A deliberate compiler warning fails the build. Existing migrations are unchanged. JWT issuer/audience now default to `hot-desk-booking-system` / `hot-desk-booking-system-api`; existing tokens require a new sign-in.
 
 ## Phase 7: Add CI quality gates
 

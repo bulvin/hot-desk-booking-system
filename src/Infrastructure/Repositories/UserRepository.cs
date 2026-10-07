@@ -4,33 +4,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
-    private readonly AppDbContext _dbContext;
-
-    public UserRepository(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     public void Add(User user)
     {
-        _dbContext.Add(user);
+        dbContext.Add(user);
     }
-    
-    public async Task<bool> Exists(string email, CancellationToken cancellationToken)
+
+    public async Task<bool> Exists(string email, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Users.AnyAsync(u => u.Email == email, cancellationToken);
+        return await dbContext.Users.AnyAsync(u => u.Email == email, cancellationToken);
     }
 
     public async Task<Role?> GetRoleByName(string name, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
+        return await dbContext.Roles.FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
     }
 
     public async Task<User?> GetByEmail(string email, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Users
+        return await dbContext.Users
             .Include(u => u.Roles)
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
     }

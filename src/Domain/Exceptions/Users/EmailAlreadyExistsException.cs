@@ -2,15 +2,9 @@ using System.Net;
 
 namespace Domain.Exceptions.Users;
 
-public class EmailAlreadyExistsException : HotDeskBookingException
+public class EmailAlreadyExistsException(string email) : HotDeskBookingException($"Email {email} is already registered")
 {
-    public string Email { get; }
-
-    public EmailAlreadyExistsException(string email) 
-        : base($"Email {email} is already registered")
-    {
-        Email = email;
-    }
+    public string Email { get; } = email;
 
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.Conflict;
 }

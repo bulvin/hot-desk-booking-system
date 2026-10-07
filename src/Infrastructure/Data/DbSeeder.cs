@@ -30,15 +30,15 @@ public static class DbSeeder
 
         var roles = new List<Role>
         {
-            new() 
-            { 
+            new()
+            {
                 Id = AdminRoleId,
                 Name = UserRole.Administrator.ToString(),
                 CreatedAt = now,
                 UpdatedAt = now
             },
-            new() 
-            { 
+            new()
+            {
                 Id = EmployeeRoleId,
                 Name = UserRole.Employee.ToString(),
                 CreatedAt = now,
@@ -53,7 +53,8 @@ public static class DbSeeder
     private static async Task SeedUsers(AppDbContext context)
     {
         var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == AdminRoleId);
-        if (adminRole == null) return;
+        if (adminRole == null)
+            return;
         var now = DateTime.UtcNow;
 
         var adminUser = new User
@@ -65,7 +66,7 @@ public static class DbSeeder
             Password = BCrypt.Net.BCrypt.HashPassword("Test123!"),
             CreatedAt = now,
             UpdatedAt = now,
-      
+
         };
         adminUser.Roles.Add(adminRole);
         await context.Users.AddAsync(adminUser);

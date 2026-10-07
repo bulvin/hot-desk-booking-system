@@ -2,5 +2,5 @@ namespace Application.Interfaces;
 
 public interface IDateTimeProvider
 {
-    public DateTime UtcNow { get; set; } 
+    public DateTime UtcNow { get; set; }
 }

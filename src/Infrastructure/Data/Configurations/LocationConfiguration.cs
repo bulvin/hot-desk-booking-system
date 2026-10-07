@@ -23,7 +23,7 @@ public class LocationConfiguration : EntityConfiguration<Location>
             a.Property(ad => ad.BuildingNumber)
                 .HasMaxLength(16)
                 .IsRequired();
-            
+
             a.Property(ad => ad.City)
                 .HasMaxLength(100)
                 .IsRequired();
@@ -37,7 +37,7 @@ public class LocationConfiguration : EntityConfiguration<Location>
             .WithOne(d => d.Location)
             .HasForeignKey(d => d.LocationId)
             .OnDelete(DeleteBehavior.NoAction);
-        
+
         base.Configure(builder);
     }
 }

@@ -5,26 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(AppDbContext dbContext, IDateTimeProvider dateTimeProvider) : IUnitOfWork
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IDateTimeProvider _dateTimeProvider;
-
-    public UnitOfWork(AppDbContext dbContext, IDateTimeProvider dateTimeProvider)
-    {
-        _dbContext = dbContext;
-        _dateTimeProvider = dateTimeProvider;
-    }
-
     public async Task SaveChanges(CancellationToken cancellationToken = default)
     {
         UpdateEntities();
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private void UpdateEntities()
     {
-        var entries = _dbContext
+        var entries = dbContext
             .ChangeTracker
             .Entries<Entity>();
 
@@ -33,10 +24,10 @@ public class UnitOfWork : IUnitOfWork
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.CreatedAt = entry.Entity.UpdatedAt = _dateTimeProvider.UtcNow;
+                    entry.Entity.CreatedAt = entry.Entity.UpdatedAt = dateTimeProvider.UtcNow;
                     break;
                 case EntityState.Modified:
-                    entry.Entity.UpdatedAt = _dateTimeProvider.UtcNow;
+                    entry.Entity.UpdatedAt = dateTimeProvider.UtcNow;
                     break;
             }
         }

@@ -5,7 +5,13 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <AnalysisLevel>10.0</AnalysisLevel>
-        <AnalysisMode>All</AnalysisMode>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" PrivateAssets="all" IncludeAssets="analyzers;build;buildtransitive" />
+        <PackageReference Include="Meziantou.Analyzer" Version="3.0.294" PrivateAssets="all" IncludeAssets="analyzers;build;buildtransitive" />
+        <PackageReference Include="Roslynator.Analyzers" Version="5.0.1" PrivateAssets="all" IncludeAssets="analyzers;build;buildtransitive" />
+    </ItemGroup>
 </Project>

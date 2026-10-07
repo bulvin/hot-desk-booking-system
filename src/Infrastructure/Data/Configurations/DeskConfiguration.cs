@@ -11,7 +11,7 @@ public class DeskConfiguration : EntityConfiguration<Desk>
     public override void Configure(EntityTypeBuilder<Desk> builder)
     {
         builder.ToTable("Desks");
-        
+
         builder.Property(d => d.Name)
             .HasMaxLength(50)
             .IsRequired();
@@ -28,7 +28,7 @@ public class DeskConfiguration : EntityConfiguration<Desk>
             .WithOne(r => r.Desk)
             .HasForeignKey(r => r.DeskId)
             .OnDelete(DeleteBehavior.NoAction);
-        
+
         base.Configure(builder);
     }
 }

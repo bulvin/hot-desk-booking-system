@@ -2,15 +2,10 @@ using System.Net;
 
 namespace Domain.Exceptions.Locations;
 
-public class LocationHasDesksException : HotDeskBookingException
+public class LocationHasDesksException(Guid locationId)
+    : HotDeskBookingException($"Cannot delete location {locationId} as it has existing desks")
 {
-    public Guid Id { get; }
-
-    public LocationHasDesksException(Guid locationId) 
-        : base($"Cannot delete location {locationId} as it has existing desks")
-    {
-        Id = locationId;
-    }
+    public Guid Id { get; } = locationId;
 
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.BadRequest;
 }

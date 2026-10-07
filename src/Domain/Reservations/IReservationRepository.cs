@@ -9,6 +9,6 @@ public interface IReservationRepository
         DateOnly startDate,
         DateOnly endDate,
         CancellationToken cancellationToken = default);
-    Task<Reservation?> GetById(Guid id,  CancellationToken cancellationToken = default);
+    Task<Reservation?> GetById(Guid id, CancellationToken cancellationToken = default);
     Task<Reservation?> GetByDesk(Guid deskId, CancellationToken cancellationToken = default);
 }

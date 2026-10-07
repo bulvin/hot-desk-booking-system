@@ -14,7 +14,7 @@ public interface IDeskRepository
         bool? isBookable,
         DateOnly startDate,
         DateOnly endDate,
-        int page, 
+        int page,
         int pageSize,
         CancellationToken cancellationToken);
 }

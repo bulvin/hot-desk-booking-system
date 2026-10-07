@@ -2,13 +2,9 @@ using System.Net;
 
 namespace Domain.Exceptions.Locations;
 
-public class LocationNotFoundException : HotDeskBookingException
+public class LocationNotFoundException(Guid id) : HotDeskBookingException($"Location id {id} was not found")
 {
-    public Guid Id { get; }
-    public LocationNotFoundException(Guid id) : base($"Location id {id} was not found")
-    {
-        Id = id;
-    }
-    
+    public Guid Id { get; } = id;
+
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.NotFound;
 }

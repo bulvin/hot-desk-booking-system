@@ -2,15 +2,10 @@ using System.Net;
 
 namespace Domain.Exceptions.Reservations;
 
-public class ReservationNotFoundException : HotDeskBookingException
+public class ReservationNotFoundException(Guid reservationId)
+    : HotDeskBookingException($"Reservation with ID {reservationId} was not found")
 {
-    public Guid Id { get; }
-
-    public ReservationNotFoundException(Guid reservationId) 
-        : base($"Reservation with ID {reservationId} was not found")
-    {
-        Id = reservationId;
-    }
+    public Guid Id { get; } = reservationId;
 
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.NotFound;
 }

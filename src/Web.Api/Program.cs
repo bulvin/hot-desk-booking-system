@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
+using Microsoft.AspNetCore.Diagnostics;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
@@ -20,7 +21,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
     });
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddSingleton<IExceptionHandler>(_ => new GlobalExceptionHandler());
 builder.Services.AddProblemDetails();
 
 
@@ -38,4 +39,4 @@ app.MapControllers();
 app.UseExceptionHandler();
 
 await app.EnsureDatabaseCreated();
-app.Run();
+await app.RunAsync();

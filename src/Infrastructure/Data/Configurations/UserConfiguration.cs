@@ -20,7 +20,7 @@ public class UserConfiguration : EntityConfiguration<User>
         builder.Property(u => u.FirstName)
             .HasMaxLength(50)
             .IsRequired();
-        
+
         builder.Property(u => u.LastName)
             .HasMaxLength(50)
             .IsRequired();
@@ -33,7 +33,7 @@ public class UserConfiguration : EntityConfiguration<User>
             .WithOne(r => r.User)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.NoAction);
-        
+
         base.Configure(builder);
     }
 }

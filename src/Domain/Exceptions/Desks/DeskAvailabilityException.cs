@@ -2,15 +2,10 @@ using System.Net;
 
 namespace Domain.Exceptions.Desks;
 
-public class DeskAvailabilityException : HotDeskBookingException
+public class DeskAvailabilityException(bool isAvailability)
+    : HotDeskBookingException($"Desk is already {(isAvailability ? "available" : "unavailable")}")
 {
-    public bool IsAvailability { get; }
-
-    public DeskAvailabilityException(bool isAvailability) : base(
-        $"Desk is already {(isAvailability ? "available" : "unavailable")}")
-    {
-        IsAvailability = isAvailability;
-    }
+    public bool IsAvailability { get; } = isAvailability;
 
     public override HttpStatusCode HttpStatusCode => HttpStatusCode.BadRequest;
 }

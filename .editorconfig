@@ -1,0 +1,126 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+insert_final_newline = unset
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{json,yml,yaml,slnx}]
+indent_size = 2
+
+[*.cs]
+dotnet_diagnostic.CS8600.severity = error
+dotnet_diagnostic.CS8601.severity = error
+dotnet_diagnostic.CS8602.severity = error
+dotnet_diagnostic.CS8603.severity = error
+dotnet_diagnostic.CS8604.severity = error
+dotnet_diagnostic.CA1062.severity = none
+
+
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.RCS1090.severity = none
+
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_comma = true
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_around_binary_operators = before_and_after
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = false
+csharp_style_namespace_declarations = file_scoped
+
+dotnet_naming_rule.interfaces.symbols = interfaces
+dotnet_naming_rule.interfaces.style = interface_pascal_case
+dotnet_naming_rule.interfaces.severity = error
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.interface_pascal_case.required_prefix = I
+dotnet_naming_style.interface_pascal_case.capitalization = pascal_case
+
+dotnet_naming_rule.types_and_members.symbols = types_and_members
+dotnet_naming_rule.types_and_members.style = pascal_case
+dotnet_naming_rule.types_and_members.severity = error
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, delegate, property, event
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields.symbols = private_fields
+dotnet_naming_rule.private_fields.style = underscore_camel_case
+dotnet_naming_rule.private_fields.severity = error
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+
+dotnet_naming_rule.constants.symbols = constants
+dotnet_naming_rule.constants.style = pascal_case
+dotnet_naming_rule.constants.severity = error
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_rule.static_readonly_fields.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_fields.style = pascal_case
+dotnet_naming_rule.static_readonly_fields.severity = error
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+# EF generates these methods and timestamped file names; keep migrations intact.
+
+
+dotnet_diagnostic.CA1034.severity = none
+[src/Infrastructure/Data/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.MA0048.severity = none
+dotnet_diagnostic.MA0051.severity = none
+
+[src/Domain/Exceptions/{*.cs,**/*.cs}]
+dotnet_diagnostic.CA1032.severity = none
+dotnet_diagnostic.RCS1194.severity = none
+
+
+[src/Application/Interfaces/CQRS/I{Command,Query}.cs]
+dotnet_diagnostic.CA1040.severity = none
+
+
+[src/Application/HttpContextExtensions.cs]
+dotnet_diagnostic.CA1034.severity = none
+
+
+[src/Application/ApplicationServiceCollectionExtensions.cs]
+dotnet_diagnostic.CA1034.severity = none
+
+[src/Infrastructure/InfrastructureServiceCollectionExtensions.cs]
+dotnet_diagnostic.CA1034.severity = none
+
+
+
+
+[src/Domain/Reservations/Status.cs]
+dotnet_diagnostic.CA1700.severity = none
+
+
+[src/Web.Api/Controllers/*.cs]
+dotnet_diagnostic.CA1515.severity = none
+
+
+[src/Web.Api/Extensions/*.cs]
+dotnet_diagnostic.CA1515.severity = none
+
+
+[src/Web.Api/Infrastructure/GlobalExceptionHandler.cs]
+dotnet_diagnostic.CA1812.severity = none
+
+[tests/UnitTests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.MA0051.severity = none

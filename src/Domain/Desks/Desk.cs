@@ -10,5 +10,5 @@ public class Desk : Entity
     public bool IsAvailable { get; set; } = true;
     public Guid LocationId { get; set; }
     public Location Location { get; set; } = null!;
-    public ICollection<Reservation> Reservations = [];
+    public ICollection<Reservation> Reservations { get; } = [];
 }

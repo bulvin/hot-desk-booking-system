@@ -24,12 +24,12 @@ public class ReservationConfiguration : EntityConfiguration<Reservation>
             .WithMany(u => u.Reservations)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.NoAction);
-        
+
         builder.HasOne(r => r.Desk)
             .WithMany(d => d.Reservations)
             .HasForeignKey(r => r.DeskId)
             .OnDelete(DeleteBehavior.NoAction);
-        
+
         base.Configure(builder);
     }
 }
