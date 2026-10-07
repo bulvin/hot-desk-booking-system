@@ -8,6 +8,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /workspace
 COPY ["global.json", "."]
+COPY ["Directory.Build.props", "."]
 COPY ["src/Web.Api/Web.Api.csproj", "src/Web.Api/"]
 COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
 COPY ["src/Application/Application.csproj", "src/Application/"]
