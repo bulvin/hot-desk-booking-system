@@ -16,7 +16,7 @@ using Domain.Exceptions.Users;
 using FluentValidation;
 using FluentValidation.Results;
 using Infrastructure.Authentication;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

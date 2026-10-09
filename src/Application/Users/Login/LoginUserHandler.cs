@@ -8,7 +8,7 @@ namespace Application.Users.Login;
 public class LoginUserHandler(IUserRepository repository, IPasswordHasher passwordHasher, ITokenProvider tokenProvider)
     : ICommandHandler<LoginUserCommand, string>
 {
-    public async Task<string> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<string> Handle(LoginUserCommand request, CancellationToken cancellationToken)
     {
         var user = await repository.GetByEmail(request.Email, cancellationToken)
                    ?? throw new InvalidCredentialsException();

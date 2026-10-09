@@ -15,7 +15,7 @@ public class BookDeskHandler(
     IHttpContextAccessor httpContextAccessor)
     : ICommandHandler<BookDeskCommand, ReservationDto>
 {
-    public async Task<ReservationDto> Handle(BookDeskCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ReservationDto> Handle(BookDeskCommand command, CancellationToken cancellationToken)
     {
         var desk = await deskRepository.GetById(command.DeskId, cancellationToken)
                    ?? throw new DeskNotFoundException(command.DeskId);

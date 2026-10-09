@@ -14,7 +14,7 @@ public class CreateDeskHandler(
     ILocationRepository locationRepository)
     : ICommandHandler<CreateDeskCommand, DeskDto>
 {
-    public async Task<DeskDto> Handle(CreateDeskCommand command, CancellationToken cancellationToken)
+    public async ValueTask<DeskDto> Handle(CreateDeskCommand command, CancellationToken cancellationToken)
     {
         var location = await locationRepository.GetById(command.LocationId, cancellationToken)
                        ?? throw new LocationNotFoundException(command.LocationId);

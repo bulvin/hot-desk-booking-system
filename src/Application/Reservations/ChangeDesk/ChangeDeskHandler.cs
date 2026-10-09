@@ -4,7 +4,7 @@ using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Exceptions.Reservations;
 using Domain.Reservations;
-using MediatR;
+using Unit = Mediator.Unit;
 using Microsoft.AspNetCore.Http;
 
 namespace Application.Reservations.ChangeDesk;
@@ -16,7 +16,7 @@ public class ChangeDeskHandler(
     IHttpContextAccessor httpContextAccessor)
     : ICommandHandler<ChangeDeskCommand, Unit>
 {
-    public async Task<Unit> Handle(ChangeDeskCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(ChangeDeskCommand command, CancellationToken cancellationToken)
     {
         var reservation = await repository.GetById(command.Id, cancellationToken)
             ?? throw new ReservationNotFoundException(command.Id);

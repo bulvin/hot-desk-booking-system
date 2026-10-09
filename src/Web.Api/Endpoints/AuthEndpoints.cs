@@ -1,6 +1,6 @@
 using Application.Users.Login;
 using Application.Users.Register;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Web.Api.Requests;
 

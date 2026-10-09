@@ -1,7 +1,7 @@
 using Application.Behaviors;
 using FluentValidation;
+using Mediator;
 using Microsoft.Extensions.DependencyInjection;
-
 
 namespace Application;
 
@@ -12,13 +12,15 @@ public static class ApplicationServiceCollectionExtensions
         public IServiceCollection AddApplication()
         {
             var assembly = typeof(ApplicationServiceCollectionExtensions).Assembly;
-            services.AddMediatR(cfg =>
+            services.AddValidatorsFromAssembly(assembly);
+            services.AddMediator(options =>
             {
-                cfg.RegisterServicesFromAssembly(assembly);
-                cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+                options.ServiceLifetime = ServiceLifetime.Scoped;
+                options.GenerateTypesAsInternal = true;
+                options.Assemblies = [typeof(ApplicationServiceCollectionExtensions)];
+                options.PipelineBehaviors = [typeof(ValidationBehavior<,>)];
             });
 
-            services.AddValidatorsFromAssembly(assembly);
             return services;
         }
     }

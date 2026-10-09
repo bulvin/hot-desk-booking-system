@@ -53,7 +53,7 @@ public class GetDeskHandlerTests
 
 
         var exception = await Assert.ThrowsAsync<DeskNotFoundException>(
-            () => _handler.Handle(query, CancellationToken.None));
+            () => _handler.Handle(query, CancellationToken.None).AsTask());
 
         Assert.Equal(query.Id, exception.Id);
         Assert.Equal(System.Net.HttpStatusCode.NotFound, exception.HttpStatusCode);

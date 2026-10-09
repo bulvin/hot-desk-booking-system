@@ -9,7 +9,7 @@ namespace Application.Locations.Create;
 public class CreateLocationHandler(IUnitOfWork unitOfWork, ILocationRepository repository)
     : ICommandHandler<CreateLocationCommand, LocationDto>
 {
-    public async Task<LocationDto> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<LocationDto> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
     {
         var location = new Location
         {

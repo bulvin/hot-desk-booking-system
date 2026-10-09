@@ -1,5 +1,5 @@
 using Application.Interfaces.CQRS;
-using MediatR;
+using Unit = Mediator.Unit;
 
 namespace Application.Desks.Delete;
 

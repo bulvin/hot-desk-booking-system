@@ -2,14 +2,14 @@ using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Exceptions.Locations;
 using Domain.Locations;
-using MediatR;
+using Unit = Mediator.Unit;
 
 namespace Application.Locations.Delete;
 
 public class DeleteLocationHandler(ILocationRepository repository, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteLocationCommand, Unit>
 {
-    public async Task<Unit> Handle(DeleteLocationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(DeleteLocationCommand command, CancellationToken cancellationToken)
     {
         var location = await repository.GetById(command.Id, cancellationToken)
                        ?? throw new LocationNotFoundException(command.Id);

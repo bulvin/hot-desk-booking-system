@@ -18,10 +18,10 @@ public class ValidationBehaviorTests
         using var cancellation = new CancellationTokenSource();
         var receivedToken = CancellationToken.None;
 
-        var result = await behavior.Handle(request, token =>
+        var result = await behavior.Handle(request, (_, token) =>
         {
             receivedToken = token;
-            return Task.FromResult(42);
+            return ValueTask.FromResult(42);
         }, cancellation.Token);
 
         Assert.Equal(42, result);
@@ -35,11 +35,11 @@ public class ValidationBehaviorTests
         var request = new GetDesksByLocationQuery(Guid.Empty, DeskAvailabilityFilter: null, DateRange: null, PaginationFilter: null);
         var nextCalled = false;
 
-        await Assert.ThrowsAsync<ValidationException>(() => behavior.Handle(request, _ =>
+        await Assert.ThrowsAsync<ValidationException>(() => behavior.Handle(request, (_, _) =>
         {
             nextCalled = true;
-            return Task.FromResult(42);
-        }, CancellationToken.None));
+            return ValueTask.FromResult(42);
+        }, CancellationToken.None).AsTask());
 
         Assert.False(nextCalled);
     }

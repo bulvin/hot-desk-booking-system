@@ -6,7 +6,7 @@ namespace Application.Desks.GetPagedByLocation;
 
 public class GetDesksHandler(IDeskRepository repository) : IQueryHandler<GetDesksByLocationQuery, PagedDto<DeskDto>>
 {
-    public async Task<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
+    public async ValueTask<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
     {
         var page = query.PaginationFilter?.Page ?? 1;
         var pageSize = query.PaginationFilter?.PageSize ?? 30;

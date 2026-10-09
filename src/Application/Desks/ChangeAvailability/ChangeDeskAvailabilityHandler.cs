@@ -3,14 +3,14 @@ using Domain;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Exceptions.Locations;
-using MediatR;
+using Unit = Mediator.Unit;
 
 namespace Application.Desks.ChangeAvailability;
 
 public class ChangeDeskAvailabilityHandler(IUnitOfWork unitOfWork, IDeskRepository deskRepository)
     : ICommandHandler<ChangeDeskAvailabilityCommand, Unit>
 {
-    public async Task<Unit> Handle(ChangeDeskAvailabilityCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(ChangeDeskAvailabilityCommand command, CancellationToken cancellationToken)
     {
         var desk = await deskRepository.GetById(command.Id, cancellationToken)
                    ?? throw new DeskNotFoundException(command.Id);

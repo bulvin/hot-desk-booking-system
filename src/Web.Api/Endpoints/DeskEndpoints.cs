@@ -5,7 +5,7 @@ using Application.Desks.GetDetails;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using Infrastructure.Authentication;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Web.Api.Requests;
 

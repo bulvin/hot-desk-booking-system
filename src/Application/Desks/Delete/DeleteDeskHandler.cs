@@ -3,7 +3,7 @@ using Domain;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Reservations;
-using MediatR;
+using Unit = Mediator.Unit;
 
 namespace Application.Desks.Delete;
 
@@ -13,7 +13,7 @@ public class DeleteDeskHandler(
     IReservationRepository reservationRepository)
     : ICommandHandler<DeleteDeskCommand, Unit>
 {
-    public async Task<Unit> Handle(DeleteDeskCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(DeleteDeskCommand command, CancellationToken cancellationToken)
     {
         var desk = await deskRepository.GetByIdAndLocation(command.DeskId, command.LocationId, cancellationToken)
                        ?? throw new DeskNotFoundException(command.DeskId);

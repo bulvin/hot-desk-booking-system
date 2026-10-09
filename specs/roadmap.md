@@ -17,7 +17,7 @@ Done when: container startup and migration checks pass without losing data/histo
 
 ## Phase 3: Refresh application dependencies — complete
 
-- [x] Upgrade validation, authentication, Swagger, and test packages; retain reviewed MediatR 12 and replace AutoMapper with explicit mapping.
+- [x] Upgrade validation, authentication, Swagger, and test packages; use source-generated Mediator and replace AutoMapper with explicit mapping.
 - [x] Verify dispatch, validation, mappings, authentication, authorization, and HTTP contracts; record package/security/license decisions.
 
 Done when: reviewed dependency graph, Release build, 14 tests, and HTTP smoke checks pass.

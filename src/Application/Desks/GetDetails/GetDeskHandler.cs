@@ -12,7 +12,7 @@ namespace Application.Desks.GetDetails;
 public class GetDeskHandler(IHttpContextAccessor httpContextAccessor, IDeskRepository deskRepository)
     : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
 {
-    public async Task<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
+    public async ValueTask<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
     {
         var desk = await deskRepository.GetById(query.Id, cancellationToken)
                                  ?? throw new DeskNotFoundException(query.Id);

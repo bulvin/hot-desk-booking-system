@@ -9,7 +9,7 @@ namespace Application.Users.Register;
 public class RegisterUserHandler(IUnitOfWork unitOfWork, IUserRepository repository, IPasswordHasher passwordHasher)
     : ICommandHandler<RegisterUserCommand, Guid>
 {
-    public async Task<Guid> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Guid> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         if (await repository.Exists(request.Email, cancellationToken))
             throw new EmailAlreadyExistsException(request.Email);

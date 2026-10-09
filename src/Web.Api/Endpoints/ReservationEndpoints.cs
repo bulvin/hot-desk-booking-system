@@ -1,7 +1,7 @@
 using Application.Dtos;
 using Application.Reservations.BookDesk;
 using Application.Reservations.ChangeDesk;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Web.Api.Requests;
 

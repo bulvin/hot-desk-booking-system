@@ -2,7 +2,7 @@ using Application.Dtos;
 using Application.Locations.Create;
 using Application.Locations.Delete;
 using Infrastructure.Authentication;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Web.Api.Requests;
 
