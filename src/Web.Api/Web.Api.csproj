@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="UnitTests" />
       <ProjectReference Include="..\Application\Application.csproj" />
       <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
     </ItemGroup>

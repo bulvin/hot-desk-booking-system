@@ -7,6 +7,6 @@ public class JwtOptions
 
     public required string Key { get; init; }
     public required int Expires { get; init; }
-    public string Issuer { get; init; } = DefaultIssuer;
-    public string Audience { get; init; } = DefaultAudience;
+    public string Issuer { get; set; } = DefaultIssuer;
+    public string Audience { get; set; } = DefaultAudience;
 }

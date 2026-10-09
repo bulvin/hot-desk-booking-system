@@ -17,6 +17,24 @@ public class JwtTests
     private const string SigningKey = "unit-test-signing-key-with-at-least-32-bytes";
 
     [Theory]
+    [InlineData(null, null, false)]
+    [InlineData(null, null, true)]
+    [InlineData("", "", false)]
+    [InlineData(" ", " ", false)]
+    public void StartupValidation_AcceptsDefaultIssuerAndAudience(string? issuer, string? audience, bool includeNullOverrides)
+    {
+        using var services = CreateServices(issuer, audience, includeNullOverrides);
+
+        services.GetRequiredService<IStartupValidator>().Validate();
+
+        var options = services.GetRequiredService<IOptions<JwtOptions>>().Value;
+        Assert.Equal(JwtOptions.DefaultIssuer, options.Issuer);
+        Assert.Equal(JwtOptions.DefaultAudience, options.Audience);
+        Assert.Equal(options.Issuer, GetValidation(services).ValidIssuer);
+        Assert.Equal(options.Audience, GetValidation(services).ValidAudience);
+    }
+
+    [Theory]
     [InlineData(null, null)]
     [InlineData("test-issuer", "test-audience")]
     public void GenerateToken_MatchesConfiguredValidation(string? issuer, string? audience)
@@ -59,7 +77,7 @@ public class JwtTests
             Assert.Throws<SecurityTokenInvalidAudienceException>(() => handler.ValidateToken(token, validation, out _));
     }
 
-    private static ServiceProvider CreateServices(string? issuer, string? audience)
+    private static ServiceProvider CreateServices(string? issuer, string? audience, bool includeNullOverrides = false)
     {
         var settings = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -67,9 +85,9 @@ public class JwtTests
             ["Jwt:Key"] = SigningKey,
             ["Jwt:Expires"] = "1"
         };
-        if (issuer is not null)
+        if (issuer is not null || includeNullOverrides)
             settings["Jwt:Issuer"] = issuer;
-        if (audience is not null)
+        if (audience is not null || includeNullOverrides)
             settings["Jwt:Audience"] = audience;
 
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
@@ -88,10 +106,16 @@ public class JwtTests
     [InlineData(" ", "test-audience")]
     [InlineData("test-issuer", "")]
     [InlineData("test-issuer", " ")]
-    public void ConfigureOptions_RejectsBlankIssuerOrAudience(string issuer, string audience)
+    public void ConfigureOptions_BlankIssuerOrAudienceUsesDefaults(string issuer, string audience)
     {
         using var services = CreateServices(issuer, audience);
 
-        Assert.Throws<OptionsValidationException>(() => services.GetRequiredService<IOptions<JwtOptions>>().Value);
+        services.GetRequiredService<IStartupValidator>().Validate();
+        var options = services.GetRequiredService<IOptions<JwtOptions>>().Value;
+        Assert.Equal(string.IsNullOrWhiteSpace(issuer) ? JwtOptions.DefaultIssuer : issuer, options.Issuer);
+        Assert.Equal(string.IsNullOrWhiteSpace(audience) ? JwtOptions.DefaultAudience : audience, options.Audience);
+
+        var token = services.GetRequiredService<ITokenProvider>().GenerateToken(new User { Email = "test@example.com" });
+        new JwtSecurityTokenHandler().ValidateToken(token, GetValidation(services), out _);
     }
 }

@@ -3,6 +3,7 @@ using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
 using Microsoft.AspNetCore.Diagnostics;
+using Web.Api.Endpoints;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
@@ -14,12 +15,11 @@ builder.Services
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGenWithAuth();
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-    });
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+});
 
 builder.Services.AddSingleton<IExceptionHandler>(_ => new GlobalExceptionHandler());
 builder.Services.AddProblemDetails();
@@ -34,7 +34,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapControllers();
+app.MapAuthEndpoints();
+app.MapLocationEndpoints();
+app.MapDeskEndpoints();
+app.MapReservationEndpoints();
 
 app.UseExceptionHandler();
 

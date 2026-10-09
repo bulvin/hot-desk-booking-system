@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure;
@@ -27,8 +28,8 @@ public static class InfrastructureServiceCollectionExtensions
 
             return services
                 .AddServices()
-                .AddAuthorization()
                 .AddAuthentication(configuration)
+                .AddAuthorization()
                 .AddDatabase(configuration);
         }
 
@@ -66,13 +67,28 @@ public static class InfrastructureServiceCollectionExtensions
                     "Jwt:Key must contain at least 32 bytes for HS256. Configure Jwt:Key using .NET User Secrets for development.");
             }
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            services.AddOptions<JwtOptions>()
+                .Bind(configuration.GetSection("Jwt"))
+                .PostConfigure(options =>
+                {
+                    if (string.IsNullOrWhiteSpace(options.Issuer))
+                        options.Issuer = JwtOptions.DefaultIssuer;
+                    if (string.IsNullOrWhiteSpace(options.Audience))
+                        options.Audience = JwtOptions.DefaultAudience;
+                })
+                .Validate(options => options.Expires > 0, "Jwt:Expires must be positive.")
+                .ValidateOnStart();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+            services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+                .Configure<IOptions<JwtOptions>>((options, jwtOptions) =>
             {
+                var jwt = jwtOptions.Value;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    IssuerSigningKey = JwtTokenProvider.SecurityKey(jwtKey),
-                    ValidIssuer = configuration["Jwt:Issuer"] ?? JwtOptions.DefaultIssuer,
-                    ValidAudience = configuration["Jwt:Audience"] ?? JwtOptions.DefaultAudience,
+                    IssuerSigningKey = JwtTokenProvider.SecurityKey(jwt.Key),
+                    ValidIssuer = jwt.Issuer,
+                    ValidAudience = jwt.Audience,
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
@@ -81,12 +97,6 @@ public static class InfrastructureServiceCollectionExtensions
                 };
             });
 
-            services.AddOptions<JwtOptions>()
-                .Bind(configuration.GetSection("Jwt"))
-                .Validate(options => options.Expires > 0, "Jwt:Expires must be positive.")
-                .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Jwt:Issuer is required.")
-                .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Jwt:Audience is required.")
-                .ValidateOnStart();
             services.AddSingleton<ITokenProvider, JwtTokenProvider>();
             services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
