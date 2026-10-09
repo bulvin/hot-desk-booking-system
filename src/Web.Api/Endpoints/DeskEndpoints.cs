@@ -17,34 +17,39 @@ internal static class DeskEndpoints
     {
         var group = endpoints.MapGroup("/api/locations/{locationId:guid}/desks")
             .WithTags("Desks")
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPut("/{id:guid}", ChangeAvailability)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Update desk availability")
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapGet("", GetForLocation)
-            .WithSummary("Get paged desks for location")
-            .Produces(StatusCodes.Status400BadRequest);
+            .WithSummary("Get paged desks for location");
 
         group.MapGet("/{id:guid}", GetDetails)
             .WithName("GetDeskDetails")
             .WithSummary("Get desk details")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("", Create)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Create desk in location")
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         group.MapDelete("/{deskId:guid}", Delete)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Delete desk")
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static async Task<NoContent> ChangeAvailability(Guid id, Guid locationId, bool isAvailable,

@@ -13,15 +13,21 @@ internal static class ReservationEndpoints
     {
         var group = endpoints.MapGroup("/api/reservations")
             .WithTags("Reservations")
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("", BookDesk)
             .WithSummary("Book a desk")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}/change-desk", ChangeDesk)
             .WithSummary("Change reserved desk")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status403Forbidden);
     }
 
     private static async Task<Created<ReservationDto>> BookDesk(BookDeskRequest request,

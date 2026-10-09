@@ -143,6 +143,30 @@ public sealed class GlobalExceptionHandlerTests
         Assert.Equal(0, body.Length);
     }
 
+    [Theory]
+    [InlineData(413, "https://tools.ietf.org/html/rfc9110#section-15.5.14")]
+    [InlineData(415, "https://tools.ietf.org/html/rfc9110#section-15.5.16")]
+    [InlineData(418, null)]
+    public async Task BadHttpRequestException_UsesTypeMatchingItsStatus(int statusCode, string? expectedType)
+    {
+        using var services = CreateServices();
+        await using var body = new MemoryStream();
+        var context = CreateContext(services, body);
+        var handler = CreateHandler(services, Environments.Production);
+
+        await handler.TryHandleAsync(context, new BadHttpRequestException("Request rejected", statusCode),
+            TestContext.Current.CancellationToken);
+        body.Position = 0;
+        using var json = await JsonDocument.ParseAsync(body, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(statusCode, context.Response.StatusCode);
+        Assert.Equal(statusCode, json.RootElement.GetProperty("status").GetInt32());
+        if (expectedType is null)
+            Assert.False(json.RootElement.TryGetProperty("type", out _));
+        else
+            Assert.Equal(expectedType, json.RootElement.GetProperty("type").GetString());
+    }
+
     private static ServiceProvider CreateServices() => new ServiceCollection().AddLogging()
         .AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize)
         .BuildServiceProvider();

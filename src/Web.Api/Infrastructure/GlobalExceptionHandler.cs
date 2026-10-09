@@ -20,7 +20,6 @@ internal sealed class GlobalExceptionHandler(
         {
             Status = statusCode,
             Title = title,
-            Type = GetProblemType(statusCode),
             Instance = httpContext.Request.Path,
             Detail = GetSafeErrorMessage(exception)
         };
@@ -54,16 +53,6 @@ internal sealed class GlobalExceptionHandler(
             ReasonPhrases.GetReasonPhrase((int)bookingException.HttpStatusCode)),
         BadHttpRequestException badRequest => (badRequest.StatusCode, ReasonPhrases.GetReasonPhrase(badRequest.StatusCode)),
         _ => (StatusCodes.Status500InternalServerError, "Internal Server Error"),
-    };
-
-    private static string GetProblemType(int statusCode) => statusCode switch
-    {
-        StatusCodes.Status400BadRequest => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-        StatusCodes.Status401Unauthorized => "https://tools.ietf.org/html/rfc9110#section-15.5.2",
-        StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc9110#section-15.5.4",
-        StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
-        StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
-        _ => "https://tools.ietf.org/html/rfc9110#section-15.6.1",
     };
 
     private string? GetSafeErrorMessage(Exception exception) => exception switch

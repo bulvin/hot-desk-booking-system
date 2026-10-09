@@ -10,15 +10,21 @@ internal static class AuthEndpoints
 {
     internal static void MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api").WithTags("Auth").AllowAnonymous();
+        var group = endpoints.MapGroup("/api")
+            .WithTags("Auth")
+            .AllowAnonymous()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/register", Register)
             .WithSummary("Creates a new employee account")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/login", Login)
-            .WithSummary("Logs in a user")
-            .Produces(StatusCodes.Status400BadRequest);
+            .WithSummary("Logs in a user");
     }
 
     private static async Task<Ok<Guid>> Register(RegisterUserRequest request,

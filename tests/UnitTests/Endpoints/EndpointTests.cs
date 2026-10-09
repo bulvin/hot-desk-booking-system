@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Application.Desks.ChangeAvailability;
 using Application.Desks.Create;
@@ -9,7 +10,9 @@ using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using Application.Reservations.ChangeDesk;
 using Application.Users.Login;
+using Application.Users.Register;
 using Domain.Exceptions.Desks;
+using Domain.Exceptions.Users;
 using FluentValidation;
 using FluentValidation.Results;
 using Infrastructure.Authentication;
@@ -18,6 +21,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Swashbuckle.AspNetCore.Swagger;
@@ -35,7 +39,7 @@ public sealed class EndpointTests : IAsyncLifetime
 
     public EndpointTests()
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Production });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
         builder.Services.AddSingleton(_sender.Object);
@@ -49,6 +53,7 @@ public sealed class EndpointTests : IAsyncLifetime
 
         _app = builder.Build();
         _app.UseExceptionHandler();
+        _app.UseStatusCodePages();
         _app.UseAuthentication();
         _app.Use(async (context, next) =>
         {
@@ -90,6 +95,92 @@ public sealed class EndpointTests : IAsyncLifetime
         Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/reservations", document.Paths.Keys, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task DuplicateRegistration_ReturnsConflictProblem()
+    {
+        _sender.Setup(sender => sender.Send(It.IsAny<RegisterUserCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new EmailAlreadyExistsException("user@example.com"));
+
+        using var response = await _client.PostAsJsonAsync("/api/register",
+            new { Email = "user@example.com", FirstName = "Test", LastName = "User", Password = "password" },
+            TestContext.Current.CancellationToken);
+
+        await AssertProblemResponse(response, HttpStatusCode.Conflict, "POST /api/register", "15.5.10");
+        _sender.VerifyAll();
+    }
+
+    [Fact]
+    public async Task UnexpectedFailure_ReturnsGenericServerProblem()
+    {
+        _sender.Setup(sender => sender.Send(It.IsAny<LoginUserCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Secret database connection"));
+
+        using var response = await _client.PostAsJsonAsync("/api/login",
+            new { Email = "user@example.com", Password = "password" }, TestContext.Current.CancellationToken);
+
+        await AssertProblemResponse(response, HttpStatusCode.InternalServerError, "POST /api/login", "15.6.1");
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("Secret", body, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/missing-route", HttpStatusCode.NotFound, "15.5.5")]
+    [InlineData("GET", "/api/login", HttpStatusCode.MethodNotAllowed, "15.5.6")]
+    [InlineData("GET", "/api/locations/11111111-1111-1111-1111-111111111111/desks?page=invalid", HttpStatusCode.BadRequest, "15.5.1")]
+    public async Task EmptyErrors_ReturnProblemDetails(string method, string path, HttpStatusCode status, string section)
+    {
+        using var request = new HttpRequestMessage(new HttpMethod(method), path);
+        request.Headers.Accept.ParseAdd("application/problem+json");
+        using var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        await AssertProblemResponse(response, status, $"{method} {path.Split('?')[0]}", section);
+        Assert.Empty(_sender.Invocations);
+    }
+
+    [Theory]
+    [InlineData("application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
+    [InlineData("text/plain", "not-json", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
+    public async Task InvalidBody_ReturnsProblemDetails(string contentType, string body, HttpStatusCode status, string section)
+    {
+        using var content = new StringContent(body, Encoding.UTF8, contentType);
+        using var response = await _client.PostAsync("/api/login", content, TestContext.Current.CancellationToken);
+
+        await AssertProblemResponse(response, status, "POST /api/login", section);
+        Assert.Empty(_sender.Invocations);
+    }
+
+    [Theory]
+    [InlineData("/api/register", "POST", "200,400,404,409,413,415,500")]
+    [InlineData("/api/login", "POST", "200,400,413,415,500")]
+    [InlineData("/api/locations", "POST", "201,400,401,403,409,413,415,500")]
+    [InlineData("/api/locations/{id}", "DELETE", "204,400,401,403,404,500")]
+    [InlineData("/api/locations/{locationId}/desks", "GET", "200,400,401,500")]
+    [InlineData("/api/locations/{locationId}/desks", "POST", "201,400,401,403,404,409,413,415,500")]
+    [InlineData("/api/locations/{locationId}/desks/{id}", "GET", "200,400,401,404,500")]
+    [InlineData("/api/locations/{locationId}/desks/{id}", "PUT", "204,400,401,403,404,500")]
+    [InlineData("/api/locations/{locationId}/desks/{deskId}", "DELETE", "204,400,401,403,404,500")]
+    [InlineData("/api/reservations", "POST", "201,400,401,404,409,413,415,500")]
+    [InlineData("/api/reservations/{id}/change-desk", "PUT", "204,400,401,403,404,413,415,500")]
+    public void Swagger_DocumentsResponseCodesAndProblemSchemas(string path, string method, string expectedCodes)
+    {
+        var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
+        var operation = document.Paths[path].Operations!
+            .Single(pair => string.Equals(pair.Key.ToString(), method, StringComparison.OrdinalIgnoreCase)).Value;
+        Assert.NotNull(operation.Responses);
+        Assert.Equal(expectedCodes.Split(',').Order(StringComparer.Ordinal),
+            operation.Responses.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+
+        foreach (var (status, response) in operation.Responses)
+        {
+            if (string.CompareOrdinal(status, "400") < 0)
+                continue;
+
+            Assert.NotNull(response.Content);
+            Assert.Contains("application/problem+json", response.Content.Keys, StringComparer.Ordinal);
+            Assert.NotNull(response.Content["application/problem+json"].Schema);
+        }
     }
 
     [Fact]
@@ -233,7 +324,23 @@ public sealed class EndpointTests : IAsyncLifetime
         using var request = new HttpRequestMessage(new HttpMethod(method), path);
         using var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(status, response.StatusCode);
+        await AssertProblemResponse(response, status, $"{method} {path}",
+            status == HttpStatusCode.Unauthorized ? "15.5.2" : "15.5.4");
+        if (status == HttpStatusCode.Unauthorized)
+            Assert.Contains(response.Headers.WwwAuthenticate, header => string.Equals(header.Scheme, "Bearer", StringComparison.Ordinal));
         Assert.Empty(_sender.Invocations);
+    }
+
+    private static async Task AssertProblemResponse(HttpResponseMessage response, HttpStatusCode status, string instance, string section)
+    {
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal((int)status, problem.GetProperty("status").GetInt32());
+        Assert.Equal($"https://tools.ietf.org/html/rfc9110#section-{section}", problem.GetProperty("type").GetString());
+        Assert.Equal(instance, problem.GetProperty("instance").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("title").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
+        Assert.Equal(DateTimeKind.Utc, problem.GetProperty("timestamp").GetDateTime().Kind);
     }
 }

@@ -92,6 +92,8 @@ Done when: conflicting requests cannot both succeed and rejected operations leav
 
 ## Phase 13: Normalize HTTP resource responses
 
+- [x] Document endpoint error statuses and Problem Details schemas, including authentication, authorization, conflicts, and request-body errors.
+- [x] Normalize empty HTTP errors through the Problem Details service and verify response metadata, RFC type links, and Swagger contracts.
 - [ ] Review Created URLs, existing resource routes, Problem Details, and reservation identity visibility.
 - [ ] Add focused HTTP tests for success/error statuses and employee/admin response differences.
 

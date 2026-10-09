@@ -14,15 +14,21 @@ internal static class LocationEndpoints
     {
         var group = endpoints.MapGroup("/api/locations")
             .WithTags("Locations")
-            .RequireAuthorization(PolicyNames.Admin);
+            .RequireAuthorization(PolicyNames.Admin)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("", Create)
             .WithSummary("Create location")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         group.MapDelete("/{id:guid}", Delete)
             .WithSummary("Delete location")
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static async Task<Created<LocationDto>> Create(CreateLocationRequest request,

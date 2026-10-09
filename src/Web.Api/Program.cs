@@ -29,6 +29,11 @@ builder.Services.AddProblemDetails(options =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -40,8 +45,6 @@ app.MapAuthEndpoints();
 app.MapLocationEndpoints();
 app.MapDeskEndpoints();
 app.MapReservationEndpoints();
-
-app.UseExceptionHandler();
 
 await app.EnsureDatabaseCreated();
 await app.RunAsync();
