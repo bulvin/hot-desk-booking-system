@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
-using Microsoft.AspNetCore.Diagnostics;
 using Web.Api.Endpoints;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
@@ -21,8 +20,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new DateOnlyJsonConverter());
 });
 
-builder.Services.AddSingleton<IExceptionHandler>(_ => new GlobalExceptionHandler());
-builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize;
+});
 
 
 var app = builder.Build();

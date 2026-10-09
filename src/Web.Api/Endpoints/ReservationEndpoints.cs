@@ -17,12 +17,11 @@ internal static class ReservationEndpoints
 
         group.MapPost("", BookDesk)
             .WithSummary("Book a desk")
-            .Produces(StatusCodes.Status422UnprocessableEntity);
+            .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id:guid}/change-desk", ChangeDesk)
             .WithSummary("Change reserved desk")
-            .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status422UnprocessableEntity);
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
     private static async Task<Created<ReservationDto>> BookDesk(BookDeskRequest request,

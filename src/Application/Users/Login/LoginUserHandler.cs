@@ -10,9 +10,8 @@ public class LoginUserHandler(IUserRepository repository, IPasswordHasher passwo
 {
     public async Task<string> Handle(LoginUserCommand request, CancellationToken cancellationToken)
     {
-        var user = await repository.GetByEmail(request.Email, cancellationToken);
-        if (user == null)
-            throw new InvalidCredentialsException();
+        var user = await repository.GetByEmail(request.Email, cancellationToken)
+                   ?? throw new InvalidCredentialsException();
 
         var verified = passwordHasher.Verify(request.Password, user.Password);
         if (!verified)

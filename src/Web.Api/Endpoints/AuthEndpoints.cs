@@ -14,7 +14,6 @@ internal static class AuthEndpoints
 
         group.MapPost("/register", Register)
             .WithSummary("Creates a new employee account")
-            .Produces(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPost("/login", Login)

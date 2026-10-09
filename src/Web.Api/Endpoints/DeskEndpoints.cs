@@ -22,13 +22,12 @@ internal static class DeskEndpoints
         group.MapPut("/{id:guid}", ChangeAvailability)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Update desk availability")
-            .Produces(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("", GetForLocation)
             .WithSummary("Get paged desks for location")
-            .Produces(StatusCodes.Status422UnprocessableEntity);
+            .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{id:guid}", GetDetails)
             .WithName("GetDeskDetails")
@@ -38,7 +37,6 @@ internal static class DeskEndpoints
         group.MapPost("", Create)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Create desk in location")
-            .Produces(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status400BadRequest);
 

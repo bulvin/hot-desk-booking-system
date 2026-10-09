@@ -18,8 +18,7 @@ internal static class LocationEndpoints
 
         group.MapPost("", Create)
             .WithSummary("Create location")
-            .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status422UnprocessableEntity);
+            .Produces(StatusCodes.Status400BadRequest);
 
         group.MapDelete("/{id:guid}", Delete)
             .WithSummary("Delete location")

@@ -1,12 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Application.Desks.ChangeAvailability;
 using Application.Desks.Create;
+using Application.Desks.GetDetails;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using Application.Reservations.ChangeDesk;
 using Application.Users.Login;
+using Domain.Exceptions.Desks;
+using FluentValidation;
+using FluentValidation.Results;
 using Infrastructure.Authentication;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,7 +43,7 @@ public sealed class EndpointTests : IAsyncLifetime
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(PolicyNames.Admin, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin));
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-        builder.Services.AddProblemDetails();
+        builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize);
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGenWithAuth();
 
@@ -85,6 +90,45 @@ public sealed class EndpointTests : IAsyncLifetime
         Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/reservations", document.Paths.Keys, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task MissingDesk_ReturnsProblemDetailsThroughExceptionMiddleware()
+    {
+        var deskId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var exception = new DeskNotFoundException(deskId);
+        _sender.Setup(sender => sender.Send(new GetDeskDetailsQuery(deskId, locationId),
+            It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+
+        using var response = await _client.GetAsync($"/api/locations/{locationId}/desks/{deskId}",
+            TestContext.Current.CancellationToken);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("Not Found", problem.GetProperty("title").GetString());
+        Assert.Equal(exception.Message, problem.GetProperty("detail").GetString());
+        Assert.Equal($"GET /api/locations/{locationId}/desks/{deskId}", problem.GetProperty("instance").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
+        Assert.Equal(DateTimeKind.Utc, problem.GetProperty("timestamp").GetDateTime().Kind);
+        _sender.VerifyAll();
+    }
+
+    [Fact]
+    public async Task InvalidLogin_ReturnsValidationProblemWithBadRequestStatus()
+    {
+        _sender.Setup(sender => sender.Send(It.IsAny<LoginUserCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ValidationException([new ValidationFailure("Email", "Email is invalid.")]));
+
+        using var response = await _client.PostAsJsonAsync("/api/login",
+            new { Email = "invalid", Password = "password" }, TestContext.Current.CancellationToken);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("Email is invalid.", problem.GetProperty("errors").GetProperty("Email")[0].GetString());
+        _sender.VerifyAll();
     }
 
     [Fact]
