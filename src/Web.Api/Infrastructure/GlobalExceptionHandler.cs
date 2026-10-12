@@ -1,4 +1,5 @@
 using Domain.Exceptions;
+using Domain.Exceptions.Users;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;

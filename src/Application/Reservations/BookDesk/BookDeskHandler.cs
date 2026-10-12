@@ -1,10 +1,10 @@
 using Application.Dtos;
+using Application.Interfaces;
 using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Reservations;
-using Microsoft.AspNetCore.Http;
 
 namespace Application.Reservations.BookDesk;
 
@@ -12,7 +12,7 @@ public class BookDeskHandler(
     IReservationRepository repository,
     IUnitOfWork unitOfWork,
     IDeskRepository deskRepository,
-    IHttpContextAccessor httpContextAccessor)
+    IUserContext userContext)
     : ICommandHandler<BookDeskCommand, ReservationDto>
 {
     public async ValueTask<ReservationDto> Handle(BookDeskCommand command, CancellationToken cancellationToken)
@@ -33,10 +33,11 @@ public class BookDeskHandler(
             throw new DeskAlreadyReservedException(command.DeskId, command.StartDate, command.EndDate);
 
 
+        var user = userContext.GetCurrentUser();
         var reservation = new Reservation
         {
             DeskId = desk.Id,
-            UserId = httpContextAccessor.GetUserId(),
+            UserId = user.Id,
             StartDate = command.StartDate,
             EndDate = command.EndDate,
             Status = Status.Reserved

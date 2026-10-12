@@ -42,6 +42,7 @@ public class DeskRepository(AppDbContext dbContext) : IDeskRepository
     {
         var query = dbContext.Desks
             .Include(d => d.Reservations.Where(r => r.Status == Status.Reserved))
+            .ThenInclude(r => r.User)
             .Where(d => d.LocationId == locationId);
 
         if (isAvailable.HasValue)

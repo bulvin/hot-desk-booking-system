@@ -1,15 +1,15 @@
 using Application.Dtos;
+using Application.Interfaces;
 using Application.Interfaces.CQRS;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Exceptions.Locations;
 using Domain.Reservations;
 using Domain.Users;
-using Microsoft.AspNetCore.Http;
 
 namespace Application.Desks.GetDetails;
 
-public class GetDeskHandler(IHttpContextAccessor httpContextAccessor, IDeskRepository deskRepository)
+public class GetDeskHandler(IUserContext userContext, IDeskRepository deskRepository)
     : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
 {
     public async ValueTask<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
@@ -36,7 +36,7 @@ public class GetDeskHandler(IHttpContextAccessor httpContextAccessor, IDeskRepos
 
     private ReservationWithUserDto? CreateReservationDto(Reservation reservation)
     {
-        var isAdmin = httpContextAccessor.HasRole(UserRole.Administrator);
+        var isAdmin = userContext.GetCurrentUser().Roles.Contains(UserRole.Administrator.ToString(), StringComparer.Ordinal);
 
         UserReservesDto? userDto = null;
         if (!isAdmin)
@@ -47,8 +47,9 @@ public class GetDeskHandler(IHttpContextAccessor httpContextAccessor, IDeskRepos
                 reservation.Status,
                 userDto);
 
-        var fullName = $"{reservation.User.FirstName} {reservation.User.LastName}";
-        userDto = new UserReservesDto(reservation.UserId, fullName);
+        var name = string.Join(" ", new[] { reservation.User.FirstName, reservation.User.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        userDto = new UserReservesDto(reservation.UserId, string.IsNullOrWhiteSpace(name) ? null : name);
 
         return new ReservationWithUserDto(
             reservation.Id,

@@ -1,13 +1,8 @@
-using Domain.Reservations;
-
 namespace Domain.Users;
 
-public class User : Entity
+public sealed class User : Entity
 {
-    public string Email { get; set; } = default!;
-    public string FirstName { get; set; } = default!;
-    public string LastName { get; set; } = default!;
-    public string Password { get; set; } = default!;
-    public ICollection<Reservation> Reservations { get; } = [];
-    public ICollection<Role> Roles { get; } = [];
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
 }

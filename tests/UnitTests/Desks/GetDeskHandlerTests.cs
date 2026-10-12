@@ -1,11 +1,11 @@
-using System.Security.Claims;
 using Application.Desks.GetDetails;
+using Application.Dtos;
+using Application.Interfaces;
 using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Reservations;
 using Domain.Users;
 using Infrastructure.Time;
-using Microsoft.AspNetCore.Http;
 using Moq;
 
 namespace UnitTests.Desks;
@@ -14,31 +14,25 @@ namespace UnitTests.Desks;
 public class GetDeskHandlerTests
 {
     private readonly Mock<IDeskRepository> _deskRepositoryMock;
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
-    private readonly Mock<HttpContext> _httpContextMock;
-    private readonly Mock<ClaimsPrincipal> _userMock;
+    private readonly Mock<IUserContext> _userContextMock;
     private readonly DateTimeProvider _dateTimeProvider;
     private readonly GetDeskHandler _handler;
 
     public GetDeskHandlerTests()
     {
         _deskRepositoryMock = new Mock<IDeskRepository>();
-        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-        _httpContextMock = new Mock<HttpContext>();
-        _userMock = new Mock<ClaimsPrincipal>();
+        _userContextMock = new Mock<IUserContext>();
         _dateTimeProvider = new DateTimeProvider { UtcNow = DateTime.UtcNow };
 
-        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(_httpContextMock.Object);
-        _httpContextMock.Setup(x => x.User).Returns(_userMock.Object);
-
-        _handler = new GetDeskHandler(_httpContextAccessorMock.Object, _deskRepositoryMock.Object);
+        _handler = new GetDeskHandler(_userContextMock.Object, _deskRepositoryMock.Object);
     }
 
     private void SetupUserRole(bool isAdmin)
     {
-        _userMock
-            .Setup(x => x.IsInRole(UserRole.Administrator.ToString()))
-            .Returns(isAdmin);
+        _userContextMock
+            .Setup(x => x.GetCurrentUser())
+            .Returns(new ProfileDto(Guid.NewGuid(), "actor@example.com", "Current", "User",
+                isAdmin ? [UserRole.Administrator.ToString()] : [UserRole.Employee.ToString()], true));
     }
 
     [Fact]
@@ -80,12 +74,7 @@ public class GetDeskHandlerTests
         {
             Id = reservationId,
             UserId = userId,
-            User = new User
-            {
-                Id = userId,
-                FirstName = "John",
-                LastName = "Doe"
-            },
+            User = new User { Id = userId, FirstName = "John", LastName = "Doe" },
             StartDate = today,
             EndDate = tomorrow,
             Status = Status.Reserved

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using Infrastructure.Data.Converters;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
 
 namespace Web.Api.Extensions;
@@ -10,8 +9,9 @@ internal static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {
-        internal IServiceCollection AddSwaggerGenWithAuth()
+        internal IServiceCollection AddSwaggerGenWithAuth(IConfiguration configuration)
         {
+            var authority = (configuration["Keycloak:Authority"] ?? "http://localhost:8090/realms/hotdesk").TrimEnd('/');
             services.AddSwaggerGen(o =>
             {
                 o.SwaggerDoc("v1", new OpenApiInfo { Title = "HotDesk Booking API", Version = "v1" });
@@ -25,21 +25,31 @@ internal static class ServiceCollectionExtensions
 
                 var securityScheme = new OpenApiSecurityScheme
                 {
-                    Name = "JWT Authentication",
-                    Description = "Enter your JWT token",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = JwtBearerDefaults.AuthenticationScheme,
-                    BearerFormat = "JWT"
+                    Type = SecuritySchemeType.OAuth2,
+                    Description = "Log in through Keycloak using Authorization Code + PKCE.",
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri($"{authority}/protocol/openid-connect/auth"),
+                            TokenUrl = new Uri($"{authority}/protocol/openid-connect/token"),
+                            Scopes = new Dictionary<string, string>(StringComparer.Ordinal)
+                            {
+                                ["openid"] = "OpenID Connect",
+                                ["profile"] = "User profile",
+                                ["email"] = "Verified email"
+                            }
+                        }
+                    }
                 };
 
-                o.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
+                o.AddSecurityDefinition("Keycloak", securityScheme);
 
                 o.AddSecurityRequirement(document => new OpenApiSecurityRequirement
                 {
                     {
-                        new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document),
-                        []
+                        new OpenApiSecuritySchemeReference("Keycloak", document),
+                        ["openid", "profile", "email"]
                     }
                 });
                 o.EnableAnnotations();

@@ -8,17 +8,15 @@ namespace Infrastructure.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<Location> Locations { get; set; }
-    public DbSet<Desk> Desks { get; set; }
-    public DbSet<Reservation> Reservations { get; set; }
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Location> Locations => Set<Location>();
+    public DbSet<Desk> Desks => Set<Desk>();
+    public DbSet<Reservation> Reservations => Set<Reservation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("HotDeskBooking");
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

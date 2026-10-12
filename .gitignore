@@ -400,6 +400,7 @@ src/.idea
 src/.idea/
 .containers/
 # Local development configuration and secrets
+/.env
 /src/.env
 /src/.secrets/
 /src/.https/
@@ -407,3 +408,4 @@ src/.idea/
 .https
 .idea
 .run
+/.tools/

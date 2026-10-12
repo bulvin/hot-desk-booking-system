@@ -8,9 +8,11 @@ See [mission.md](mission.md) for the product scope and [roadmap.md](roadmap.md) 
 | --- | --- |
 | C# and .NET | Run the application and its booking rules |
 | ASP.NET Core | Provides the API that company applications use to book desks |
-| PostgreSQL | Stores accounts, offices, desks, and reservations |
+| Keycloak, OAuth 2.0 and OpenID Connect | Manage accounts and roles; Authorization Code + PKCE supplies access tokens, validated and introspected by the API |
+| PostgreSQL | Stores offices, desks and reservations with Keycloak subject IDs; Keycloak stores accounts in a separate database in the same container |
 | Entity Framework Core and Npgsql | Let the application read and save data in PostgreSQL |
 | Docker Compose | Starts the API and database together for development |
+| Mailpit | Captures development email confirmation messages through SMTP |
 | Swagger | Shows the available API actions and lets developers try them |
 | xUnit and Moq | Test booking rules and other application behavior |
 

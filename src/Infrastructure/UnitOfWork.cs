@@ -15,6 +15,7 @@ public class UnitOfWork(AppDbContext dbContext, IDateTimeProvider dateTimeProvid
 
     private void UpdateEntities()
     {
+        var now = dateTimeProvider.UtcNow;
         var entries = dbContext
             .ChangeTracker
             .Entries<Entity>();
@@ -24,10 +25,10 @@ public class UnitOfWork(AppDbContext dbContext, IDateTimeProvider dateTimeProvid
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.CreatedAt = entry.Entity.UpdatedAt = dateTimeProvider.UtcNow;
+                    entry.Entity.CreatedAt = entry.Entity.UpdatedAt = now;
                     break;
                 case EntityState.Modified:
-                    entry.Entity.UpdatedAt = dateTimeProvider.UtcNow;
+                    entry.Entity.UpdatedAt = now;
                     break;
             }
         }

@@ -1,3 +1,3 @@
 namespace Application.Dtos;
 
-public record UserReservesDto(Guid Id, string Name);
+public record UserReservesDto(Guid Id, string? Name);

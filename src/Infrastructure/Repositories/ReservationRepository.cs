@@ -44,7 +44,6 @@ public class ReservationRepository(AppDbContext dbContext) : IReservationReposit
     {
         return await dbContext.Reservations
             .Include(r => r.Desk)
-            .Include(r => r.User)
             .FirstOrDefaultAsync(r => r.DeskId == deskId && r.Status == Status.Reserved, cancellationToken: cancellationToken);
     }
 }

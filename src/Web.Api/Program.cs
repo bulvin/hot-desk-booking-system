@@ -13,7 +13,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGenWithAuth();
+builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -38,7 +38,11 @@ app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.OAuthClientId(builder.Configuration["Keycloak:SwaggerClientId"] ?? "hotdesk-swagger");
+        options.OAuthUsePkce();
+    });
 }
 
 app.MapAuthEndpoints();

@@ -3,6 +3,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
+      - Keycloak__Authority=http://localhost:8090/realms/hotdesk
+      - Keycloak__BackchannelAuthority=http://keycloak:8080/realms/hotdesk
+      - Keycloak__RequireHttpsMetadata=false
     ports:
       - "8080:8080"
     volumes:
@@ -11,4 +14,24 @@ services:
   postgres:
     ports:
       - "5432:5432"
-     
+
+  keycloak:
+    command: ["--config-file=/run/secrets/keycloak.conf", "start-dev", "--import-realm"]
+    depends_on:
+      mailpit:
+        condition: service_started
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_HOSTNAME: http://localhost:8090
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./keycloak/hotdesk-realm.json:/opt/keycloak/data/import/hotdesk-realm.json:ro
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    container_name: mailpit
+    ports:
+      - "8025:8025"

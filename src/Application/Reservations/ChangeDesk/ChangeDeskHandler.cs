@@ -1,3 +1,4 @@
+using Application.Interfaces;
 using Application.Interfaces.CQRS;
 using Domain;
 using Domain.Desks;
@@ -5,7 +6,6 @@ using Domain.Exceptions.Desks;
 using Domain.Exceptions.Reservations;
 using Domain.Reservations;
 using Unit = Mediator.Unit;
-using Microsoft.AspNetCore.Http;
 
 namespace Application.Reservations.ChangeDesk;
 
@@ -13,7 +13,7 @@ public class ChangeDeskHandler(
     IReservationRepository repository,
     IUnitOfWork unitOfWork,
     IDeskRepository deskRepository,
-    IHttpContextAccessor httpContextAccessor)
+    IUserContext userContext)
     : ICommandHandler<ChangeDeskCommand, Unit>
 {
     public async ValueTask<Unit> Handle(ChangeDeskCommand command, CancellationToken cancellationToken)
@@ -24,8 +24,9 @@ public class ChangeDeskHandler(
         if (reservation.DeskId == command.DeskId)
             throw new SameDeskChangeException(command.DeskId);
 
-        if (reservation.UserId != httpContextAccessor.GetUserId())
-            throw new UnauthorizedReservationChangeException(command.Id, httpContextAccessor.GetUserId());
+        var userId = userContext.GetCurrentUser().Id;
+        if (reservation.UserId != userId)
+            throw new UnauthorizedReservationChangeException(command.Id, userId);
 
         if (!await deskRepository.Exists(command.DeskId, cancellationToken))
             throw new DeskNotFoundException(command.DeskId);

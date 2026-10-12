@@ -1,28 +1,26 @@
 using Application;
+using Application.Desks.Create;
 using Application.Desks.GetPagedByLocation;
 using Application.Interfaces;
 using Application.Locations.Delete;
-using Application.Users.Login;
 using Domain;
 using Domain.Desks;
 using Domain.Locations;
 using Domain.Reservations;
-using Domain.Users;
 using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
+
+
 namespace UnitTests.Behaviors;
 
 public sealed class MediatorTests
 {
-    private readonly Mock<IUserRepository> _users = new(MockBehavior.Strict);
     private readonly Mock<IDeskRepository> _desks = new(MockBehavior.Strict);
     private readonly Mock<ILocationRepository> _locations = new(MockBehavior.Strict);
     private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
-    private readonly Mock<IPasswordHasher> _passwordHasher = new(MockBehavior.Strict);
-    private readonly Mock<ITokenProvider> _tokenProvider = new(MockBehavior.Strict);
 
     [Fact]
     public async Task Send_InvalidCommand_ValidatesBeforeHandler()
@@ -32,11 +30,11 @@ public sealed class MediatorTests
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
         var exception = await Assert.ThrowsAsync<ValidationException>(() =>
-            sender.Send(new LoginUserCommand("invalid-email", ""), TestContext.Current.CancellationToken).AsTask());
+            sender.Send(new CreateDeskCommand("", null), TestContext.Current.CancellationToken).AsTask());
 
-        Assert.Contains(exception.Errors, error => string.Equals(error.PropertyName, "Email", StringComparison.Ordinal));
-        Assert.Contains(exception.Errors, error => string.Equals(error.PropertyName, "Password", StringComparison.Ordinal));
-        Assert.Empty(_users.Invocations);
+        Assert.Contains(exception.Errors, error => string.Equals(error.PropertyName, "Name", StringComparison.Ordinal));
+        Assert.Contains(exception.Errors, error => string.Equals(error.PropertyName, "LocationId", StringComparison.Ordinal));
+        Assert.Empty(_desks.Invocations);
     }
 
     [Fact]
@@ -56,20 +54,21 @@ public sealed class MediatorTests
     public async Task Send_ValidCommand_ReturnsHandlerResultAndForwardsCancellation()
     {
         using var cancellation = new CancellationTokenSource();
-        var user = new User { Email = "user@example.com", Password = "stored-hash" };
-        _users.Setup(repository => repository.GetByEmail(user.Email, cancellation.Token)).ReturnsAsync(user);
-        _passwordHasher.Setup(hasher => hasher.Verify("password", user.Password)).Returns(true);
-        _tokenProvider.Setup(provider => provider.GenerateToken(user)).Returns("access-token");
+        var location = new Location { Id = Guid.NewGuid() };
+        _locations.Setup(repository => repository.GetById(location.Id, cancellation.Token)).ReturnsAsync(location);
+        _desks.Setup(repository => repository.Add(It.Is<Desk>(desk => desk.Name == "Window" && desk.LocationId == location.Id)));
+        _unitOfWork.Setup(unitOfWork => unitOfWork.SaveChanges(cancellation.Token)).Returns(Task.CompletedTask);
         using var provider = CreateProvider();
         using var scope = provider.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-        var result = await sender.Send(new LoginUserCommand(user.Email, "password"), cancellation.Token);
+        var result = await sender.Send(new CreateDeskCommand("Window", null) { LocationId = location.Id }, cancellation.Token);
 
-        Assert.Equal("access-token", result);
-        _users.VerifyAll();
-        _passwordHasher.VerifyAll();
-        _tokenProvider.VerifyAll();
+        Assert.Equal("Window", result.Name);
+        Assert.Equal(location.Id, result.LocationId);
+        _locations.VerifyAll();
+        _desks.VerifyAll();
+        _unitOfWork.VerifyAll();
     }
 
     [Fact]
@@ -101,23 +100,21 @@ public sealed class MediatorTests
         Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<ISender>());
         Assert.Same(firstScope.ServiceProvider.GetRequiredService<ISender>(), firstScope.ServiceProvider.GetRequiredService<ISender>());
         Assert.NotSame(firstScope.ServiceProvider.GetRequiredService<ISender>(), secondScope.ServiceProvider.GetRequiredService<ISender>());
-        Assert.Same(firstScope.ServiceProvider.GetRequiredService<LoginUserHandler>(), firstScope.ServiceProvider.GetRequiredService<LoginUserHandler>());
-        Assert.NotSame(firstScope.ServiceProvider.GetRequiredService<LoginUserHandler>(), secondScope.ServiceProvider.GetRequiredService<LoginUserHandler>());
+        Assert.Same(firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>(), firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>());
+        Assert.NotSame(firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>(), secondScope.ServiceProvider.GetRequiredService<CreateDeskHandler>());
     }
 
     private ServiceProvider CreateProvider()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddHttpContextAccessor();
+        services.AddScoped<IUserContext>(_ => new Mock<IUserContext>(MockBehavior.Strict).Object);
         services.AddApplication();
-        services.AddScoped(_ => _users.Object);
+
         services.AddScoped(_ => _desks.Object);
         services.AddScoped(_ => _locations.Object);
         services.AddScoped(_ => _unitOfWork.Object);
         services.AddScoped(_ => new Mock<IReservationRepository>(MockBehavior.Strict).Object);
-        services.AddSingleton(_passwordHasher.Object);
-        services.AddSingleton(_tokenProvider.Object);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 }

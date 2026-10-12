@@ -8,11 +8,9 @@ using Application.Desks.Create;
 using Application.Desks.GetDetails;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
+using Application.Interfaces;
 using Application.Reservations.ChangeDesk;
-using Application.Users.Login;
-using Application.Users.Register;
 using Domain.Exceptions.Desks;
-using Domain.Exceptions.Users;
 using FluentValidation;
 using FluentValidation.Results;
 using Infrastructure.Authentication;
@@ -34,6 +32,7 @@ namespace UnitTests.Endpoints;
 public sealed class EndpointTests : IAsyncLifetime
 {
     private readonly Mock<ISender> _sender = new(MockBehavior.Strict);
+
     private readonly WebApplication _app;
     private readonly HttpClient _client = new();
 
@@ -43,13 +42,18 @@ public sealed class EndpointTests : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
         builder.Services.AddSingleton(_sender.Object);
+
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IUserContext>(_ => new Mock<IUserContext>(MockBehavior.Strict).Object);
+
+
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(PolicyNames.Admin, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin));
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize);
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGenWithAuth();
+        builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
 
         _app = builder.Build();
         _app.UseExceptionHandler();
@@ -66,6 +70,7 @@ public sealed class EndpointTests : IAsyncLifetime
             await next(context);
         });
         _app.UseAuthorization();
+
         _app.MapAuthEndpoints();
         _app.MapLocationEndpoints();
         _app.MapDeskEndpoints();
@@ -90,44 +95,29 @@ public sealed class EndpointTests : IAsyncLifetime
     {
         var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
 
-        Assert.Equal(11, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
-        Assert.Contains("/api/login", document.Paths.Keys, StringComparer.Ordinal);
+        Assert.Equal(10, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
+        Assert.Contains("/api/profile", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/reservations", document.Paths.Keys, StringComparer.Ordinal);
     }
 
     [Fact]
-    public async Task DuplicateRegistration_ReturnsConflictProblem()
-    {
-        _sender.Setup(sender => sender.Send(It.IsAny<RegisterUserCommand>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new EmailAlreadyExistsException("user@example.com"));
-
-        using var response = await _client.PostAsJsonAsync("/api/register",
-            new { Email = "user@example.com", FirstName = "Test", LastName = "User", Password = "password" },
-            TestContext.Current.CancellationToken);
-
-        await AssertProblemResponse(response, HttpStatusCode.Conflict, "POST /api/register", "15.5.10");
-        _sender.VerifyAll();
-    }
-
-    [Fact]
     public async Task UnexpectedFailure_ReturnsGenericServerProblem()
     {
-        _sender.Setup(sender => sender.Send(It.IsAny<LoginUserCommand>(), It.IsAny<CancellationToken>()))
+        _sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Secret database connection"));
 
-        using var response = await _client.PostAsJsonAsync("/api/login",
-            new { Email = "user@example.com", Password = "password" }, TestContext.Current.CancellationToken);
+        using var response = await _client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
+            new { Name = "Desk" }, TestContext.Current.CancellationToken);
 
-        await AssertProblemResponse(response, HttpStatusCode.InternalServerError, "POST /api/login", "15.6.1");
+        await AssertProblemResponse(response, HttpStatusCode.InternalServerError, "POST /api/locations/11111111-1111-1111-1111-111111111111/desks", "15.6.1");
         var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("Secret", body, StringComparison.Ordinal);
     }
 
     [Theory]
     [InlineData("GET", "/api/missing-route", HttpStatusCode.NotFound, "15.5.5")]
-    [InlineData("GET", "/api/login", HttpStatusCode.MethodNotAllowed, "15.5.6")]
     [InlineData("GET", "/api/locations/11111111-1111-1111-1111-111111111111/desks?page=invalid", HttpStatusCode.BadRequest, "15.5.1")]
     public async Task EmptyErrors_ReturnProblemDetails(string method, string path, HttpStatusCode status, string section)
     {
@@ -145,15 +135,15 @@ public sealed class EndpointTests : IAsyncLifetime
     public async Task InvalidBody_ReturnsProblemDetails(string contentType, string body, HttpStatusCode status, string section)
     {
         using var content = new StringContent(body, Encoding.UTF8, contentType);
-        using var response = await _client.PostAsync("/api/login", content, TestContext.Current.CancellationToken);
+        using var response = await _client.PostAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks", content, TestContext.Current.CancellationToken);
 
-        await AssertProblemResponse(response, status, "POST /api/login", section);
+        await AssertProblemResponse(response, status, "POST /api/locations/11111111-1111-1111-1111-111111111111/desks", section);
         Assert.Empty(_sender.Invocations);
     }
 
     [Theory]
-    [InlineData("/api/register", "POST", "200,400,404,409,413,415,500")]
-    [InlineData("/api/login", "POST", "200,400,413,415,500")]
+    [InlineData("/api/profile", "GET", "200,401,403,500")]
+
     [InlineData("/api/locations", "POST", "201,400,401,403,409,413,415,500")]
     [InlineData("/api/locations/{id}", "DELETE", "204,400,401,403,404,500")]
     [InlineData("/api/locations/{locationId}/desks", "GET", "200,400,401,500")]
@@ -207,18 +197,17 @@ public sealed class EndpointTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task InvalidLogin_ReturnsValidationProblemWithBadRequestStatus()
+    public async Task InvalidDesk_ReturnsValidationProblemWithBadRequestStatus()
     {
-        _sender.Setup(sender => sender.Send(It.IsAny<LoginUserCommand>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ValidationException([new ValidationFailure("Email", "Email is invalid.")]));
-
-        using var response = await _client.PostAsJsonAsync("/api/login",
-            new { Email = "invalid", Password = "password" }, TestContext.Current.CancellationToken);
+        _sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ValidationException([new ValidationFailure("Name", "Name is invalid.")]));
+        using var response = await _client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
+            new { Name = "" }, TestContext.Current.CancellationToken);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        Assert.Equal("Email is invalid.", problem.GetProperty("errors").GetProperty("Email")[0].GetString());
+        Assert.Equal("Name is invalid.", problem.GetProperty("errors").GetProperty("Name")[0].GetString());
         _sender.VerifyAll();
     }
 
@@ -292,27 +281,13 @@ public sealed class EndpointTests : IAsyncLifetime
         _sender.VerifyAll();
     }
 
-    [Fact]
-    public async Task Login_AllowsAnonymousAndCreatesApplicationCommand()
-    {
-        _client.DefaultRequestHeaders.Remove("Test-Role");
-        _sender.Setup(sender => sender.Send(new LoginUserCommand("user@example.com", "password"),
-            It.IsAny<CancellationToken>())).ReturnsAsync("token");
-
-        using var response = await _client.PostAsJsonAsync("/api/login",
-            new { Email = "user@example.com", Password = "password" }, TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("token", await response.Content.ReadFromJsonAsync<string>(TestContext.Current.CancellationToken));
-        _sender.VerifyAll();
-    }
-
     [Theory]
     [InlineData("GET", "/api/locations/11111111-1111-1111-1111-111111111111/desks", null, HttpStatusCode.Unauthorized)]
     [InlineData("POST", "/api/locations", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("POST", "/api/locations/11111111-1111-1111-1111-111111111111/desks", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("DELETE", "/api/locations/11111111-1111-1111-1111-111111111111/desks/22222222-2222-2222-2222-222222222222", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("POST", "/api/reservations", null, HttpStatusCode.Unauthorized)]
+    [InlineData("GET", "/api/profile", null, HttpStatusCode.Unauthorized)]
     public async Task ProtectedEndpoints_EnforceAuthorization(string method, string path, string? role, HttpStatusCode status)
     {
         _client.DefaultRequestHeaders.Remove("Test-Role");

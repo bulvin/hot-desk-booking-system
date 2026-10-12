@@ -1,0 +1,110 @@
+{
+  "realm": "hotdesk",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": true,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)",
+  "smtpServer": {
+    "port": "1025",
+    "host": "mailpit",
+    "ssl": "false",
+    "from": "noreply@hotdesk.local",
+    "fromDisplayName": "Hot Desk Booking",
+    "auth": "false",
+    "starttls": "false"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "Employee"
+      },
+      {
+        "name": "Administrator"
+      },
+      {
+        "composite": true,
+        "name": "default-roles-hotdesk",
+        "composites": {
+          "realm": [
+            "Employee"
+          ]
+        }
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-hotdesk"
+  },
+  "clients": [
+    {
+      "directAccessGrantsEnabled": false,
+      "clientId": "hotdesk-api",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "publicClient": false
+    },
+    {
+      "directAccessGrantsEnabled": false,
+      "clientId": "hotdesk-swagger",
+      "enabled": true,
+      "protocolMappers": [
+        {
+          "protocolMapper": "oidc-audience-mapper",
+          "protocol": "openid-connect",
+          "name": "hotdesk-api-audience",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "included.client.audience": "hotdesk-api"
+          }
+        }
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/swagger/",
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "basic",
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "redirectUris": [
+        "http://localhost:8080/swagger/oauth2-redirect.html"
+      ],
+      "implicitFlowEnabled": false,
+      "standardFlowEnabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"validations\":{\"length\":{\"min\":3,\"max\":100}},\"name\":\"username\",\"multivalued\":false,\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]}},{\"validations\":{\"email\":{},\"length\":{\"max\":100}},\"name\":\"email\",\"permissions\":{\"edit\":[\"admin\"],\"view\":[\"admin\",\"user\"]},\"multivalued\":false,\"required\":{\"roles\":[\"user\"]}},{\"validations\":{\"length\":{\"min\":1,\"max\":50}},\"name\":\"firstName\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"multivalued\":false,\"required\":{\"roles\":[\"user\"]}},{\"validations\":{\"length\":{\"min\":1,\"max\":50}},\"name\":\"lastName\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"multivalued\":false,\"required\":{\"roles\":[\"user\"]}}]}"
+          ]
+        },
+        "providerId": "declarative-user-profile"
+      }
+    ]
+  }
+}

@@ -4,7 +4,6 @@ using Domain;
 using Domain.Desks;
 using Domain.Locations;
 using Domain.Reservations;
-using Domain.Users;
 using Infrastructure.Authentication;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
@@ -25,92 +24,62 @@ public static class InfrastructureServiceCollectionExtensions
         public IServiceCollection AddInfrastructure(IConfiguration configuration)
         {
             ArgumentNullException.ThrowIfNull(configuration);
-
-            return services
-                .AddServices()
-                .AddAuthentication(configuration)
-                .AddAuthorization()
-                .AddDatabase(configuration);
-        }
-
-        private IServiceCollection AddServices()
-        {
+            services.AddLogging();
             services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ILocationRepository, LocationRepository>();
             services.AddScoped<IDeskRepository, DeskRepository>();
             services.AddScoped<IReservationRepository, ReservationRepository>();
-            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddHttpContextAccessor();
+            services.AddScoped<IUserContext, UserContext>();
+            services.AddScoped<BookingUserSynchronizer>();
+            services.AddHttpClient<KeycloakTokenValidationEvents>();
 
-            return services;
-        }
+            var connection = configuration.GetConnectionString("Database");
+            if (string.IsNullOrWhiteSpace(connection))
+                throw new InvalidOperationException("ConnectionStrings:Database is required.");
+            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connection));
 
-        private IServiceCollection AddDatabase(IConfiguration configuration)
-        {
-            var connectionString = configuration.GetConnectionString("Database");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException(
-                    "ConnectionStrings:Database is required. Configure it using .NET User Secrets for development.");
-            }
-
-            return services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionString));
-        }
-
-        private IServiceCollection AddAuthentication(IConfiguration configuration)
-        {
-            var jwtKey = configuration["Jwt:Key"];
-            if (string.IsNullOrWhiteSpace(jwtKey) || System.Text.Encoding.ASCII.GetByteCount(jwtKey) < 32)
-            {
-                throw new InvalidOperationException(
-                    "Jwt:Key must contain at least 32 bytes for HS256. Configure Jwt:Key using .NET User Secrets for development.");
-            }
-
-            services.AddOptions<JwtOptions>()
-                .Bind(configuration.GetSection("Jwt"))
-                .PostConfigure(options =>
-                {
-                    if (string.IsNullOrWhiteSpace(options.Issuer))
-                        options.Issuer = JwtOptions.DefaultIssuer;
-                    if (string.IsNullOrWhiteSpace(options.Audience))
-                        options.Audience = JwtOptions.DefaultAudience;
-                })
-                .Validate(options => options.Expires > 0, "Jwt:Expires must be positive.")
+            services.AddOptions<KeycloakOptions>().Bind(configuration.GetSection("Keycloak"))
+                .Validate(options => Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri)
+                    && uri.Scheme is "http" or "https", "Keycloak:Authority must be an absolute HTTP(S) realm URL.")
+                .Validate(options => options.BackchannelAuthority is null
+                    || Uri.TryCreate(options.BackchannelAuthority, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https",
+                    "Keycloak:BackchannelAuthority must be an absolute HTTP(S) realm URL.")
+                .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Keycloak:Audience is required.")
+                .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret),
+                    "Keycloak:ClientSecret is required for live token introspection.")
                 .ValidateOnStart();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
             services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-                .Configure<IOptions<JwtOptions>>((options, jwtOptions) =>
-            {
-                var jwt = jwtOptions.Value;
-                options.TokenValidationParameters = new TokenValidationParameters
+                .Configure<IOptions<KeycloakOptions>>((options, keycloakOptions) =>
                 {
-                    IssuerSigningKey = JwtTokenProvider.SecurityKey(jwt.Key),
-                    ValidIssuer = jwt.Issuer,
-                    ValidAudience = jwt.Audience,
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+                    var keycloak = keycloakOptions.Value;
+                    options.Authority = keycloak.Authority.TrimEnd('/');
+                    options.MetadataAddress = $"{keycloak.ServerAuthority}/.well-known/openid-configuration";
+                    options.Audience = keycloak.Audience;
+                    options.RequireHttpsMetadata = keycloak.RequireHttpsMetadata;
+                    options.MapInboundClaims = false;
+                    options.IncludeErrorDetails = false;
+                    options.EventsType = typeof(KeycloakTokenValidationEvents);
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidIssuer = keycloak.Authority.TrimEnd('/'),
+                        ValidAudience = keycloak.Audience,
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        NameClaimType = "preferred_username",
+                        RoleClaimType = ClaimTypes.Role,
+                        ClockSkew = TimeSpan.Zero
+                    };
+                });
 
-            services.AddSingleton<ITokenProvider, JwtTokenProvider>();
-            services.AddSingleton<IPasswordHasher, PasswordHasher>();
-
-            services.AddHttpContextAccessor();
-
-            return services;
-        }
-
-        private IServiceCollection AddAuthorization()
-        {
             services.AddAuthorizationBuilder()
-                .AddPolicy(PolicyNames.Admin, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin))
-                .AddPolicy(PolicyNames.Employee, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Employee));
-
+                .AddPolicy(PolicyNames.Admin, policy => policy.RequireRole(PolicyNames.Admin))
+                .AddPolicy(PolicyNames.Employee, policy => policy.RequireRole(PolicyNames.Employee));
             return services;
         }
     }
