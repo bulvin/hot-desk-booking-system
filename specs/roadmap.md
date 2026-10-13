@@ -43,9 +43,9 @@
 - [x] Validate and introspect access tokens; preserve booking ownership and role policies.
 - [x] Configure Mailpit confirmation and Swagger authorization; remove local Identity services.
 
-## Phase 9: Update location
+## Phase 9: Update location - complete
 
-- [ ] Update location (name, address) by administrator.
+- [x] Update location (name, address) by administrator.
 
 ## Phase 10: Update location
 

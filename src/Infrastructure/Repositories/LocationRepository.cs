@@ -25,6 +25,7 @@ public class LocationRepository(AppDbContext dbContext) : ILocationRepository
     public async Task<bool> IsDuplicate(Location location, CancellationToken cancellationToken = default)
     {
         return await dbContext.Locations.AnyAsync(l =>
+            l.Id != location.Id &&
             l.Name == location.Name &&
             l.Address.Street == location.Address.Street &&
             l.Address.BuildingNumber == location.Address.BuildingNumber &&

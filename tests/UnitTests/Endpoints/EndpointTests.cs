@@ -9,8 +9,11 @@ using Application.Desks.GetDetails;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using Application.Interfaces;
+using Application.Locations.Update;
 using Application.Reservations.ChangeDesk;
 using Domain.Exceptions.Desks;
+using Domain.Exceptions.Locations;
+using Domain.Locations;
 using FluentValidation;
 using FluentValidation.Results;
 using Infrastructure.Authentication;
@@ -95,7 +98,7 @@ public sealed class EndpointTests : IAsyncLifetime
     {
         var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
 
-        Assert.Equal(10, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
+        Assert.Equal(11, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
         Assert.Contains("/api/profile", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
@@ -145,6 +148,7 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("/api/profile", "GET", "200,401,403,500")]
 
     [InlineData("/api/locations", "POST", "201,400,401,403,409,413,415,500")]
+    [InlineData("/api/locations/{id}", "PUT", "200,400,401,403,404,409,413,415,500")]
     [InlineData("/api/locations/{id}", "DELETE", "204,400,401,403,404,500")]
     [InlineData("/api/locations/{locationId}/desks", "GET", "200,400,401,500")]
     [InlineData("/api/locations/{locationId}/desks", "POST", "201,400,401,403,404,409,413,415,500")]
@@ -284,6 +288,8 @@ public sealed class EndpointTests : IAsyncLifetime
     [Theory]
     [InlineData("GET", "/api/locations/11111111-1111-1111-1111-111111111111/desks", null, HttpStatusCode.Unauthorized)]
     [InlineData("POST", "/api/locations", PolicyNames.Employee, HttpStatusCode.Forbidden)]
+    [InlineData("PUT", "/api/locations/11111111-1111-1111-1111-111111111111", null, HttpStatusCode.Unauthorized)]
+    [InlineData("PUT", "/api/locations/11111111-1111-1111-1111-111111111111", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("POST", "/api/locations/11111111-1111-1111-1111-111111111111/desks", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("DELETE", "/api/locations/11111111-1111-1111-1111-111111111111/desks/22222222-2222-2222-2222-222222222222", PolicyNames.Employee, HttpStatusCode.Forbidden)]
     [InlineData("POST", "/api/reservations", null, HttpStatusCode.Unauthorized)]
@@ -303,6 +309,50 @@ public sealed class EndpointTests : IAsyncLifetime
             status == HttpStatusCode.Unauthorized ? "15.5.2" : "15.5.4");
         if (status == HttpStatusCode.Unauthorized)
             Assert.Contains(response.Headers.WwwAuthenticate, header => string.Equals(header.Scheme, "Bearer", StringComparison.Ordinal));
+        Assert.Empty(_sender.Invocations);
+    }
+
+    [Fact]
+    public async Task UpdateLocation_UsesRouteIdAndReturnsUpdatedDetails()
+    {
+        var id = Guid.NewGuid();
+        var address = new AddressDto("Street", "10", "City", "00-001");
+        var result = new LocationDto(id, "Updated", address);
+        _sender.Setup(sender => sender.Send(new UpdateLocationCommand(id, result.Name, address), It.IsAny<CancellationToken>())).ReturnsAsync(result);
+        using var response = await _client.PutAsJsonAsync($"/api/locations/{id}", new { result.Name, Address = address, Id = Guid.NewGuid() }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(result, await response.Content.ReadFromJsonAsync<LocationDto>(TestContext.Current.CancellationToken));
+        _sender.VerifyAll();
+    }
+
+    [Theory]
+    [InlineData(400, "15.5.1")]
+    [InlineData(404, "15.5.5")]
+    [InlineData(409, "15.5.10")]
+    public async Task UpdateLocation_FailuresReturnProblemDetails(int status, string section)
+    {
+        var id = Guid.NewGuid();
+        Exception exception = status switch
+        {
+            400 => new ValidationException([new ValidationFailure("Name", "Name is required.")]),
+            404 => new LocationNotFoundException(id),
+            _ => new LocationAlreadyExistsException("Duplicate", new Address())
+        };
+        _sender.Setup(sender => sender.Send(It.IsAny<UpdateLocationCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+        using var response = await _client.PutAsJsonAsync($"/api/locations/{id}", new { Name = "Name", Address = new AddressDto("Street", "1", "City", "Code") }, TestContext.Current.CancellationToken);
+        await AssertProblemResponse(response, (HttpStatusCode)status, $"PUT /api/locations/{id}", section);
+        _sender.VerifyAll();
+    }
+
+    [Theory]
+    [InlineData("application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
+    [InlineData("text/plain", "text", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
+    public async Task UpdateLocation_InvalidBodyDoesNotDispatch(string contentType, string body, HttpStatusCode status, string section)
+    {
+        var id = Guid.NewGuid();
+        using var content = new StringContent(body, Encoding.UTF8, contentType);
+        using var response = await _client.PutAsync($"/api/locations/{id}", content, TestContext.Current.CancellationToken);
+        await AssertProblemResponse(response, status, $"PUT /api/locations/{id}", section);
         Assert.Empty(_sender.Invocations);
     }
 
