@@ -47,9 +47,11 @@
 
 - [x] Update location (name, address) by administrator.
 
-## Phase 10: Update location
+## Phase 10: Booking date consistency - complete
 
-- [ ] Delete location with its desks - no booking, only admin should do that.
+- [x] Use the injected UTC clock for booking validation and default desk search dates across every location.
+- [x] Allow desk changes only before the reservation start day in UTC; keep reservation dates as inclusive calendar values and audit timestamps in UTC.
+- [x] Add regression coverage for UTC midnight, inclusive booking limits, and desk-change cutoffs; document the UTC calendar in the API.
 
 ## Phase 11: Add CI quality gates
 
@@ -57,6 +59,7 @@
 - [ ] Publish TRX/coverage artifacts and verify that a deliberate formatting or analyzer violation fails CI.
 
 Done when: a clean checkout passes the documented local commands and the same checks in CI.
+
 
 ## After the refresh
 

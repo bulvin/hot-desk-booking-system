@@ -1,17 +1,19 @@
 using Application.Dtos;
+using Application.Interfaces;
 using Application.Interfaces.CQRS;
 using Domain.Desks;
 
 namespace Application.Desks.GetPagedByLocation;
 
-public class GetDesksHandler(IDeskRepository repository) : IQueryHandler<GetDesksByLocationQuery, PagedDto<DeskDto>>
+public class GetDesksHandler(IDeskRepository repository, IDateTimeProvider dateTimeProvider) : IQueryHandler<GetDesksByLocationQuery, PagedDto<DeskDto>>
 {
     public async ValueTask<PagedDto<DeskDto>> Handle(GetDesksByLocationQuery query, CancellationToken cancellationToken)
     {
         var page = query.PaginationFilter?.Page ?? 1;
         var pageSize = query.PaginationFilter?.PageSize ?? 30;
-        var startDate = query.DateRange?.StartDate ?? DateOnly.FromDateTime(DateTime.Today);
-        var endDate = query.DateRange?.EndDate ?? DateOnly.FromDateTime(DateTime.Today);
+        var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
+        var startDate = query.DateRange?.StartDate ?? today;
+        var endDate = query.DateRange?.EndDate ?? today;
 
         var (desks, totalCount) = await repository.GetDesksByLocation(
             query.LocationId,

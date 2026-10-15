@@ -23,10 +23,12 @@ internal static class ReservationEndpoints
 
         group.MapPost("", BookDesk)
             .WithSummary("Book a desk")
+            .WithDescription("Booking dates are inclusive calendar dates. Today and the seven-day advance window use the UTC calendar for every location. Preserve date values without timezone conversion.")
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}/change-desk", ChangeDesk)
             .WithSummary("Change reserved desk")
+            .WithDescription("Desk changes are allowed only before the reservation start day, measured at midnight UTC for every location.")
             .ProducesProblem(StatusCodes.Status403Forbidden);
     }
 

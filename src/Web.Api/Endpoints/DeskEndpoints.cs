@@ -29,7 +29,8 @@ internal static class DeskEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapGet("", GetForLocation)
-            .WithSummary("Get paged desks for location");
+            .WithSummary("Get paged desks for location")
+            .WithDescription("Each omitted date defaults to today's UTC calendar date. Supplied dates are used without timezone conversion.");
 
         group.MapGet("/{id:guid}", GetDetails)
             .WithName("GetDeskDetails")

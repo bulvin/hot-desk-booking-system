@@ -8,6 +8,7 @@ using Domain.Desks;
 using Domain.Locations;
 using Domain.Reservations;
 using FluentValidation;
+using Infrastructure.Time;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -108,6 +109,10 @@ public sealed class MediatorTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<IDateTimeProvider>(new DateTimeProvider
+        {
+            UtcNow = new DateTime(2026, 10, 15, 12, 0, 0, DateTimeKind.Utc)
+        });
         services.AddScoped<IUserContext>(_ => new Mock<IUserContext>(MockBehavior.Strict).Object);
         services.AddApplication();
 
