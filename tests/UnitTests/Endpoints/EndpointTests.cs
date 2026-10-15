@@ -336,7 +336,7 @@ public sealed class EndpointTests : IAsyncLifetime
         {
             400 => new ValidationException([new ValidationFailure("Name", "Name is required.")]),
             404 => new LocationNotFoundException(id),
-            _ => new LocationAlreadyExistsException("Duplicate", new Address())
+            _ => new LocationAlreadyExistsException("Duplicate", new Address("Street", "1", "City", "Code"))
         };
         _sender.Setup(sender => sender.Send(It.IsAny<UpdateLocationCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
         using var response = await _client.PutAsJsonAsync($"/api/locations/{id}", new { Name = "Name", Address = new AddressDto("Street", "1", "City", "Code") }, TestContext.Current.CancellationToken);

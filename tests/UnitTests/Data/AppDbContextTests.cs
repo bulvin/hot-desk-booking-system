@@ -18,6 +18,9 @@ public class AppDbContextTests
         using var context = new AppDbContext(options);
 
         Assert.False(context.Database.HasPendingModelChanges());
+        var location = context.Model.FindEntityType(typeof(Location));
+        Assert.NotNull(location?.FindComplexProperty(nameof(Location.Address)));
+        Assert.Null(location.FindNavigation(nameof(Location.Address)));
         Assert.NotNull(context.Model.FindEntityType(typeof(Desk))?.FindNavigation(nameof(Desk.Reservations)));
         var reservation = context.Model.FindEntityType(typeof(Reservation));
         Assert.NotNull(reservation);

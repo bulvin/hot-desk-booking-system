@@ -14,7 +14,7 @@ public class LocationConfiguration : EntityConfiguration<Location>
         builder.Property(l => l.Name)
             .IsRequired();
 
-        builder.OwnsOne<Address>(l => l.Address, a =>
+        builder.ComplexProperty<Address>(l => l.Address, a =>
         {
             a.Property(ad => ad.Street)
                 .HasMaxLength(120)

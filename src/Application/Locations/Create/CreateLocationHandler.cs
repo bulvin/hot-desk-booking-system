@@ -11,27 +11,17 @@ public class CreateLocationHandler(IUnitOfWork unitOfWork, ILocationRepository r
 {
     public async ValueTask<LocationDto> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
     {
-        var location = new Location
-        {
-            Name = command.Name,
-            Address = new Address
-            {
-                Street = command.Address.Street,
-                BuildingNumber = command.Address.BuildingNumber,
-                City = command.Address.City,
-                PostalCode = command.Address.PostalCode
-            }
-        };
+        var address = new Address(command.Address.Street, command.Address.BuildingNumber,
+            command.Address.City, command.Address.PostalCode);
 
-        if (await repository.IsDuplicate(location: location, cancellationToken))
-            throw new LocationAlreadyExistsException(location.Name, location.Address);
+        if (await repository.IsDuplicate(command.Name, address, cancellationToken: cancellationToken))
+            throw new LocationAlreadyExistsException(command.Name, address);
 
+        var location = new Location { Name = command.Name, Address = address };
         repository.Add(location);
         await unitOfWork.SaveChanges(cancellationToken);
 
-        var locationDto = new LocationDto(location.Id, location.Name, new AddressDto(
-            location.Address.Street, location.Address.BuildingNumber,
-            location.Address.City, location.Address.PostalCode));
-        return locationDto;
+        return new LocationDto(location.Id, location.Name, new AddressDto(
+            address.Street, address.BuildingNumber, address.City, address.PostalCode));
     }
 }

@@ -18,7 +18,7 @@ public class UpdateLocationTests
     [InlineData(true)]
     public async Task Update_PreservesIdentityAndRelationships(bool unchanged)
     {
-        var location = new Location { Id = Guid.NewGuid(), Name = "Original", Address = new Address { Street = "Old", BuildingNumber = "1", City = "Old city", PostalCode = "Old code" } };
+        var location = new Location { Id = Guid.NewGuid(), Name = "Original", Address = new Address("Old", "1", "Old city", "Old code") };
         var desk = new Desk { Id = Guid.NewGuid(), LocationId = location.Id, Location = location };
         var reservation = new Reservation { Id = Guid.NewGuid(), DeskId = desk.Id, Desk = desk };
         desk.Reservations.Add(reservation);
@@ -28,7 +28,7 @@ public class UpdateLocationTests
         var repository = new Mock<ILocationRepository>(MockBehavior.Strict);
         var unitOfWork = new Mock<IUnitOfWork>(MockBehavior.Strict);
         repository.Setup(repo => repo.GetById(location.Id, It.IsAny<CancellationToken>())).ReturnsAsync(location);
-        repository.Setup(repo => repo.IsDuplicate(It.Is<Location>(candidate => candidate.Id == location.Id && candidate.Name == command.Name && candidate.Address.Street == address.Street), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        repository.Setup(repo => repo.IsDuplicate(command.Name, new Address(address.Street, address.BuildingNumber, address.City, address.PostalCode), location.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         unitOfWork.Setup(unit => unit.SaveChanges(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var result = await new UpdateLocationHandler(repository.Object, unitOfWork.Object).Handle(command, TestContext.Current.CancellationToken);
@@ -45,11 +45,11 @@ public class UpdateLocationTests
     [Fact]
     public async Task Duplicate_DoesNotMutateOrSave()
     {
-        var location = new Location { Id = Guid.NewGuid(), Name = "Original", Address = new Address { Street = "Original street" } };
+        var location = new Location { Id = Guid.NewGuid(), Name = "Original", Address = new Address("Original street", "1", "City", "Code") };
         var repository = new Mock<ILocationRepository>(MockBehavior.Strict);
         var unitOfWork = new Mock<IUnitOfWork>(MockBehavior.Strict);
         repository.Setup(repo => repo.GetById(location.Id, It.IsAny<CancellationToken>())).ReturnsAsync(location);
-        repository.Setup(repo => repo.IsDuplicate(It.IsAny<Location>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        repository.Setup(repo => repo.IsDuplicate("Updated", new Address(ValidAddress.Street, ValidAddress.BuildingNumber, ValidAddress.City, ValidAddress.PostalCode), location.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         await Assert.ThrowsAsync<LocationAlreadyExistsException>(async () => await new UpdateLocationHandler(repository.Object, unitOfWork.Object)
             .Handle(new UpdateLocationCommand(location.Id, "Updated", ValidAddress), TestContext.Current.CancellationToken));
