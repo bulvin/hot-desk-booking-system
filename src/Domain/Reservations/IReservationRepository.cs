@@ -2,6 +2,7 @@ namespace Domain.Reservations;
 
 public interface IReservationRepository
 {
+    Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default);
     void Add(Reservation reservation);
     void Update(Reservation reservation);
     Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default);

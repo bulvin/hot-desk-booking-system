@@ -53,14 +53,12 @@
 - [x] Allow desk changes only before the reservation start day in UTC; keep reservation dates as inclusive calendar values and audit timestamps in UTC.
 - [x] Add regression coverage for UTC midnight, inclusive booking limits, and desk-change cutoffs; document the UTC calendar in the API.
 
-## Phase 11: Add CI quality gates
+## Phase 11: Cancel reservation - complete
 
-- [ ] Run restore, Release build, tests, and formatting checks using the repository SDK policy.
-- [ ] Publish TRX/coverage artifacts and verify that a deliberate formatting or analyzer violation fails CI.
-
-Done when: a clean checkout passes the documented local commands and the same checks in CI.
-
+- [x] Owners cancel before the start day begins at midnight UTC; administrators cancel reserved bookings through their final UTC day. Completed bookings cannot be canceled.
+- [x] Retain canceled history, free its dates, and make authorized repeats succeed without writes. Prevent changes to canceled reservations, including stale concurrent desk changes.
+- [x] Return a conflict when deleting desks with reservation history; verify persistence and availability against PostgreSQL 18 and document the API contract.
 
 ## After the refresh
 
-Plan new endpoints separately: location browsing/editing and reservation listing/retrieval/cancellation. Frontend, multi-company tenancy, hourly/recurring bookings, notifications, reporting, and production deployment require separate scope decisions.
+Plan new endpoints separately: location browsing and reservation listing/retrieval. Frontend, multi-company tenancy, hourly/recurring bookings, notifications, reporting, and production deployment require separate scope decisions.

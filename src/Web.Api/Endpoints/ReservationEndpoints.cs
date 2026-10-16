@@ -1,5 +1,6 @@
 using Application.Dtos;
 using Application.Reservations.BookDesk;
+using Application.Reservations.Cancel;
 using Application.Reservations.ChangeDesk;
 using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -26,10 +27,23 @@ internal static class ReservationEndpoints
             .WithDescription("Booking dates are inclusive calendar dates. Today and the seven-day advance window use the UTC calendar for every location. Preserve date values without timezone conversion.")
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapPut("/{id:guid}/cancel", Cancel)
+            .WithSummary("Cancel reservation")
+            .WithDescription("Owners must cancel before the start day begins at midnight UTC. Administrators may cancel through the final UTC day. Completed reservations cannot be canceled. Cancellation retains history and frees the entire date range. Authorized repeats succeed without changes.")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         group.MapPut("/{id:guid}/change-desk", ChangeDesk)
             .WithSummary("Change reserved desk")
-            .WithDescription("Desk changes are allowed only before the reservation start day, measured at midnight UTC for every location.")
+            .WithDescription("Only reserved bookings can change desks, before the reservation start day measured at midnight UTC for every location.")
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status403Forbidden);
+    }
+
+    private static async Task<NoContent> Cancel(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        await sender.Send(new CancelReservationCommand(id), cancellationToken);
+        return TypedResults.NoContent();
     }
 
     private static async Task<Created<ReservationDto>> BookDesk(BookDeskRequest request,

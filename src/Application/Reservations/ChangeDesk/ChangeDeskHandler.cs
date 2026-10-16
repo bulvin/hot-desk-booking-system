@@ -23,12 +23,15 @@ public class ChangeDeskHandler(
         var reservation = await repository.GetById(command.Id, cancellationToken)
             ?? throw new ReservationNotFoundException(command.Id);
 
-        if (reservation.DeskId == command.DeskId)
-            throw new SameDeskChangeException(command.DeskId);
-
         var userId = userContext.GetCurrentUser().Id;
         if (reservation.UserId != userId)
             throw new UnauthorizedReservationChangeException(command.Id, userId);
+
+        if (reservation.Status != Status.Reserved)
+            throw new ReservationConflictException(command.Id);
+
+        if (reservation.DeskId == command.DeskId)
+            throw new SameDeskChangeException(command.DeskId);
 
         if (!await deskRepository.Exists(command.DeskId, cancellationToken))
             throw new DeskNotFoundException(command.DeskId);

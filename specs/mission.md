@@ -24,7 +24,7 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 | Manage desks | Administrators create/delete desks and change availability; authenticated users list/filter desks by location and retrieve details |
 | Reserve a desk | Authenticated users book an enabled desk for a date range; an application-level overlap check exists |
 | Change a reservation | Owners can change the desk; target availability/overlap checks still need completion |
-| Inspect reservations | Desk details expose reservation information with employee identity restricted to administrators; dedicated reservation listing/get/cancel endpoints are absent |
+| Inspect reservations | Desk details expose reservation information with employee identity restricted to administrators; owners and administrators can cancel reservations; dedicated listing/get endpoints are absent |
 
 ## Agreed booking rules
 
@@ -34,13 +34,16 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 - A desk must be enabled and free of overlapping active reservations for every requested day.
 - Changing a desk must enforce ownership and the same availability rules as a new booking.
 - Owners may change desks only before the reservation start day in UTC. The same cutoff applies when changing to a desk in another location.
+- Owners may cancel only before the reservation start day begins at midnight UTC. For a Friday booking, cancellation is allowed throughout Thursday and closes at 00:00 UTC on Friday.
+- Administrators may cancel reserved bookings through their final UTC day. Completed bookings cannot be canceled.
+- Cancellation retains the reservation as `Canceled` and frees its entire date range. Authorized repeats succeed without further writes, including after the cutoff. Canceled and completed reservations cannot change desks.
+- Desks with any reservation history cannot be deleted; deletion returns a conflict. Completed and canceled reservations do not block booking availability.
 - Concurrent requests must not create overlapping active reservations for the same desk. A database safeguard is still required.
 - Employees must not receive another employee's identity through reservation details; administrator access is intentional.
 
 ## Decisions required before related implementation
 
 - Decide whether an employee may hold multiple desk reservations for the same day.
-- Define how completed/canceled reservations affect availability and deletion of desks with history.
 
 ## Success criteria for the refresh
 

@@ -6,6 +6,11 @@ namespace Infrastructure.Repositories;
 
 public class ReservationRepository(AppDbContext dbContext) : IReservationRepository
 {
+    public async Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Reservations.AnyAsync(r => r.DeskId == deskId, cancellationToken);
+    }
+
     public void Add(Reservation reservation)
     {
         dbContext.Reservations.Add(reservation);

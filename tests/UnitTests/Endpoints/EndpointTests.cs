@@ -10,9 +10,11 @@ using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
 using Application.Interfaces;
 using Application.Locations.Update;
+using Application.Reservations.Cancel;
 using Application.Reservations.ChangeDesk;
 using Domain.Exceptions.Desks;
 using Domain.Exceptions.Locations;
+using Domain.Exceptions.Reservations;
 using Domain.Locations;
 using FluentValidation;
 using FluentValidation.Results;
@@ -98,11 +100,57 @@ public sealed class EndpointTests : IAsyncLifetime
     {
         var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
 
-        Assert.Equal(11, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
+        Assert.Equal(12, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
         Assert.Contains("/api/profile", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
         Assert.Contains("/api/reservations", document.Paths.Keys, StringComparer.Ordinal);
+        var cancel = Assert.Single(document.Paths["/api/reservations/{id}/cancel"].Operations!).Value;
+        foreach (var status in new[] { "204", "401", "403", "404", "409" })
+            Assert.Contains(status, cancel.Responses!.Keys, StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Administrator")]
+    [InlineData("Employee")]
+    public async Task Cancel_DispatchesRouteIdAndReturnsNoContent(string role)
+    {
+        var id = Guid.NewGuid();
+        _client.DefaultRequestHeaders.Remove("Test-Role");
+        _client.DefaultRequestHeaders.Add("Test-Role", role);
+        _sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ReturnsAsync(Unit.Value);
+        using var response = await _client.PutAsync($"/api/reservations/{id}/cancel", null, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        _sender.Verify(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Cancel_AnonymousIsUnauthorized()
+    {
+        _client.DefaultRequestHeaders.Remove("Test-Role");
+        var path = $"/api/reservations/{Guid.NewGuid()}/cancel";
+        using var response = await _client.PutAsync(path, null, TestContext.Current.CancellationToken);
+        await AssertProblemResponse(response, HttpStatusCode.Unauthorized, $"PUT {path}", "15.5.2");
+        Assert.Empty(_sender.Invocations);
+    }
+
+    [Theory]
+    [InlineData(403, "15.5.4")]
+    [InlineData(404, "15.5.5")]
+    [InlineData(409, "15.5.10")]
+    public async Task Cancel_ReturnsDocumentedProblems(int status, string section)
+    {
+        var id = Guid.NewGuid();
+        Exception exception = status switch
+        {
+            403 => new UnauthorizedReservationChangeException(id, Guid.NewGuid()),
+            404 => new ReservationNotFoundException(id),
+            _ => new ReservationConflictException(id)
+        };
+        _sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+        var path = $"/api/reservations/{id}/cancel";
+        using var response = await _client.PutAsync(path, null, TestContext.Current.CancellationToken);
+        await AssertProblemResponse(response, (HttpStatusCode)status, $"PUT {path}", section);
     }
 
     [Fact]
@@ -154,9 +202,10 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("/api/locations/{locationId}/desks", "POST", "201,400,401,403,404,409,413,415,500")]
     [InlineData("/api/locations/{locationId}/desks/{id}", "GET", "200,400,401,404,500")]
     [InlineData("/api/locations/{locationId}/desks/{id}", "PUT", "204,400,401,403,404,500")]
-    [InlineData("/api/locations/{locationId}/desks/{deskId}", "DELETE", "204,400,401,403,404,500")]
+    [InlineData("/api/locations/{locationId}/desks/{deskId}", "DELETE", "204,400,401,403,404,409,500")]
     [InlineData("/api/reservations", "POST", "201,400,401,404,409,413,415,500")]
-    [InlineData("/api/reservations/{id}/change-desk", "PUT", "204,400,401,403,404,413,415,500")]
+    [InlineData("/api/reservations/{id}/change-desk", "PUT", "204,400,401,403,404,409,413,415,500")]
+    [InlineData("/api/reservations/{id}/cancel", "PUT", "204,400,401,403,404,409,413,415,500")]
     public void Swagger_DocumentsResponseCodesAndProblemSchemas(string path, string method, string expectedCodes)
     {
         var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");

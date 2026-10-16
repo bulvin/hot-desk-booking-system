@@ -55,6 +55,7 @@ public class DeskRepository(AppDbContext dbContext) : IDeskRepository
             if (isBookable.Value)
             {
                 query = query.Where(d => !d.Reservations.Any(r =>
+                    r.Status == Status.Reserved &&
                     r.StartDate <= endDate &&
                     r.EndDate >= startDate
                 ));
@@ -62,6 +63,7 @@ public class DeskRepository(AppDbContext dbContext) : IDeskRepository
             else
             {
                 query = query.Where(d => d.Reservations.Any(r =>
+                    r.Status == Status.Reserved &&
                     r.StartDate <= endDate &&
                     r.EndDate >= startDate));
             }

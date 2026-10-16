@@ -55,4 +55,21 @@ public class ChangeDeskHandlerTests
         unit.Verify(work => work.SaveChanges(It.IsAny<CancellationToken>()), allowed ? Times.Once : Times.Never);
         clock.VerifyGet(provider => provider.UtcNow, Times.Once);
     }
+    [Theory]
+    [InlineData(Status.Canceled)]
+    [InlineData(Status.Completed)]
+    public async Task Handle_InactiveReservationCannotChangeDesk(Status status)
+    {
+        var owner = Guid.NewGuid();
+        var reservation = new Reservation { Id = Guid.NewGuid(), UserId = owner, Status = status };
+        var repository = new Mock<IReservationRepository>(MockBehavior.Strict);
+        repository.Setup(r => r.GetById(reservation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reservation);
+        var user = new Mock<IUserContext>(MockBehavior.Strict);
+        user.Setup(u => u.GetCurrentUser()).Returns(new ProfileDto(owner, "", "", "", [], true));
+        var clock = new Mock<IDateTimeProvider>();
+        var handler = new ChangeDeskHandler(repository.Object, new Mock<IUnitOfWork>(MockBehavior.Strict).Object,
+            new Mock<IDeskRepository>(MockBehavior.Strict).Object, user.Object, clock.Object);
+        await Assert.ThrowsAsync<ReservationConflictException>(() => handler.Handle(new ChangeDeskCommand(reservation.Id, Guid.NewGuid()), TestContext.Current.CancellationToken).AsTask());
+        Assert.Equal(status, reservation.Status);
+    }
 }

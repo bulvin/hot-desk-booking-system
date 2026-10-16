@@ -49,6 +49,8 @@ internal static class DeskEndpoints
         group.MapDelete("/{deskId:guid}", Delete)
             .RequireAuthorization(PolicyNames.Admin)
             .WithSummary("Delete desk")
+            .WithDescription("Desks with reservation history cannot be deleted.")
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
     }

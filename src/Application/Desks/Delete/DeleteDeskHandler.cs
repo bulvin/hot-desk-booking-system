@@ -18,7 +18,7 @@ public class DeleteDeskHandler(
         var desk = await deskRepository.GetByIdAndLocation(command.DeskId, command.LocationId, cancellationToken)
                        ?? throw new DeskNotFoundException(command.DeskId);
 
-        var hasReservation = await reservationRepository.HasActiveReservationForDesk(desk.Id, cancellationToken);
+        var hasReservation = await reservationRepository.HasReservationForDesk(desk.Id, cancellationToken);
         if (hasReservation)
             throw new DeskHasActiveReservationException(command.DeskId);
 
