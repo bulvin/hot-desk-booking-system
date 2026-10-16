@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -35,10 +36,7 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddScoped<BookingUserSynchronizer>();
             services.AddHttpClient<KeycloakTokenValidationEvents>();
 
-            var connection = configuration.GetConnectionString("Database");
-            if (string.IsNullOrWhiteSpace(connection))
-                throw new InvalidOperationException("ConnectionStrings:Database is required.");
-            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connection));
+            services.AddDatabase(configuration);
 
             services.AddOptions<KeycloakOptions>().Bind(configuration.GetSection("Keycloak"))
                 .Validate(options => Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri)
@@ -81,6 +79,24 @@ public static class InfrastructureServiceCollectionExtensions
                 .AddPolicy(PolicyNames.Admin, policy => policy.RequireRole(PolicyNames.Admin))
                 .AddPolicy(PolicyNames.Employee, policy => policy.RequireRole(PolicyNames.Employee));
             return services;
+        }
+
+        private void AddDatabase(IConfiguration configuration)
+        {
+            var connection = configuration.GetConnectionString("Database");
+            if (string.IsNullOrWhiteSpace(connection))
+                throw new InvalidOperationException("ConnectionStrings:Database is required.");
+            var seedSampleData = configuration.GetValue<bool>("Database:SeedSampleData");
+            services.AddDbContext<AppDbContext>((provider, options) =>
+            {
+                options.UseNpgsql(connection);
+                if (seedSampleData && provider.GetRequiredService<IHostEnvironment>().IsDevelopment())
+                {
+                    var clock = provider.GetRequiredService<IDateTimeProvider>();
+                    options.UseSeeding((context, _) => SampleDataSeeder.Seed(context, clock))
+                        .UseAsyncSeeding((context, _, token) => SampleDataSeeder.SeedAsync(context, clock, token));
+                }
+            });
         }
     }
 }

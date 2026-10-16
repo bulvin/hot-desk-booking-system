@@ -6,49 +6,54 @@ namespace Infrastructure.Repositories;
 
 public class ReservationRepository(AppDbContext dbContext) : IReservationRepository
 {
-    public async Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
+    private readonly DbSet<Reservation> _reservations = dbContext.Reservations;
+
+    public Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Reservations.AnyAsync(r => r.DeskId == deskId, cancellationToken);
+        return ReservationsForDesk(deskId).AnyAsync(cancellationToken);
     }
 
     public void Add(Reservation reservation)
     {
-        dbContext.Reservations.Add(reservation);
+        _reservations.Add(reservation);
     }
 
     public void Update(Reservation reservation)
     {
-        dbContext.Reservations.Update(reservation);
+        _reservations.Update(reservation);
     }
 
-    public async Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
+    public Task<bool> HasActiveReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Reservations
-            .AnyAsync(r => r.DeskId == deskId && r.Status == Status.Reserved, cancellationToken);
+        return ReservationsForDesk(deskId, Status.Reserved).AnyAsync(cancellationToken);
     }
 
-    public async Task<bool> HasActiveReservationForDesk(Guid deskId, DateOnly startDate, DateOnly endDate,
+    public Task<bool> HasActiveReservationForDesk(Guid deskId, DateOnly startDate, DateOnly endDate,
         CancellationToken cancellationToken = default)
     {
-        return await dbContext.Reservations
-            .AnyAsync(r =>
-                    r.DeskId == deskId &&
-                    r.Status == Status.Reserved &&
-                    r.StartDate <= endDate &&
-                    r.EndDate >= startDate,
-                cancellationToken);
+        return ReservationsForDesk(deskId, Status.Reserved)
+            .AnyAsync(r => r.StartDate <= endDate && r.EndDate >= startDate, cancellationToken);
     }
 
-    public async Task<Reservation?> GetById(Guid id, CancellationToken cancellationToken = default)
+    public Task<Reservation?> GetById(Guid id, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Reservations
+        return _reservations
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken: cancellationToken);
     }
 
-    public async Task<Reservation?> GetByDesk(Guid deskId, CancellationToken cancellationToken = default)
+    public Task<Reservation?> GetByDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Reservations
+        return ReservationsForDesk(deskId, Status.Reserved)
             .Include(r => r.Desk)
-            .FirstOrDefaultAsync(r => r.DeskId == deskId && r.Status == Status.Reserved, cancellationToken: cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private IQueryable<Reservation> ReservationsForDesk(Guid deskId, Status? status = null)
+    {
+        var query = _reservations.Where(r => r.DeskId == deskId);
+        if (status.HasValue)
+            query = query.Where(r => r.Status == status.Value);
+
+        return query;
     }
 }

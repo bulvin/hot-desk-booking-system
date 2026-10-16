@@ -12,6 +12,8 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 
+builder.Services.AddHostedService<DatabaseInitializationHostedService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -42,6 +44,7 @@ if (app.Environment.IsDevelopment())
     {
         options.OAuthClientId(builder.Configuration["Keycloak:SwaggerClientId"] ?? "hotdesk-swagger");
         options.OAuthUsePkce();
+        options.EnablePersistAuthorization();
     });
 }
 
@@ -50,5 +53,4 @@ app.MapLocationEndpoints();
 app.MapDeskEndpoints();
 app.MapReservationEndpoints();
 
-await app.EnsureDatabaseCreated();
 await app.RunAsync();

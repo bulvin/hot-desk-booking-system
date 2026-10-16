@@ -19,7 +19,7 @@ public class CancelReservationHandler(
         var reservation = await repository.GetById(command.Id, cancellationToken)
             ?? throw new ReservationNotFoundException(command.Id);
         var user = userContext.GetCurrentUser();
-        var isAdmin = user.Roles.Contains(UserRole.Administrator.ToString(), StringComparer.Ordinal);
+        var isAdmin = user.Roles.Contains(nameof(UserRole.Administrator), StringComparer.Ordinal);
         if (!isAdmin && reservation.UserId != user.Id)
             throw new UnauthorizedReservationChangeException(command.Id, user.Id);
 

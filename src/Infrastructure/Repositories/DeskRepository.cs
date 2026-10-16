@@ -52,21 +52,11 @@ public class DeskRepository(AppDbContext dbContext) : IDeskRepository
 
         if (isBookable.HasValue)
         {
-            if (isBookable.Value)
-            {
-                query = query.Where(d => !d.Reservations.Any(r =>
-                    r.Status == Status.Reserved &&
-                    r.StartDate <= endDate &&
-                    r.EndDate >= startDate
-                ));
-            }
-            else
-            {
-                query = query.Where(d => d.Reservations.Any(r =>
-                    r.Status == Status.Reserved &&
-                    r.StartDate <= endDate &&
-                    r.EndDate >= startDate));
-            }
+            var hasOverlappingReservation = !isBookable.Value;
+            query = query.Where(d => d.Reservations.Any(r =>
+                r.Status == Status.Reserved &&
+                r.StartDate <= endDate &&
+                r.EndDate >= startDate) == hasOverlappingReservation);
         }
 
         var count = await query.CountAsync(cancellationToken);

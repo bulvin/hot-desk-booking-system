@@ -11,7 +11,6 @@ internal static class AuthEndpoints
         endpoints.MapGet("/api/profile", GetProfile).RequireAuthorization().WithTags("Account")
             .WithSummary("Returns the current profile")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 

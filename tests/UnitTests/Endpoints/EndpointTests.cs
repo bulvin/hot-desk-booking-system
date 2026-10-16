@@ -193,7 +193,7 @@ public sealed class EndpointTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("/api/profile", "GET", "200,401,403,500")]
+    [InlineData("/api/profile", "GET", "200,401,500")]
 
     [InlineData("/api/locations", "POST", "201,400,401,403,409,413,415,500")]
     [InlineData("/api/locations/{id}", "PUT", "200,400,401,403,404,409,413,415,500")]
