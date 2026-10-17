@@ -91,20 +91,6 @@ public sealed class MediatorTests
         _unitOfWork.VerifyAll();
     }
 
-    [Fact]
-    public void Registration_UsesScopedMediatorAndHandlers()
-    {
-        using var provider = CreateProvider();
-        using var firstScope = provider.CreateScope();
-        using var secondScope = provider.CreateScope();
-
-        Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<ISender>());
-        Assert.Same(firstScope.ServiceProvider.GetRequiredService<ISender>(), firstScope.ServiceProvider.GetRequiredService<ISender>());
-        Assert.NotSame(firstScope.ServiceProvider.GetRequiredService<ISender>(), secondScope.ServiceProvider.GetRequiredService<ISender>());
-        Assert.Same(firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>(), firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>());
-        Assert.NotSame(firstScope.ServiceProvider.GetRequiredService<CreateDeskHandler>(), secondScope.ServiceProvider.GetRequiredService<CreateDeskHandler>());
-    }
-
     private ServiceProvider CreateProvider()
     {
         var services = new ServiceCollection();

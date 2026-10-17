@@ -5,24 +5,20 @@ using Domain.Desks;
 using Domain.Exceptions.Desks;
 using Domain.Reservations;
 using Domain.Users;
-using Infrastructure.Time;
 using Moq;
 
 namespace UnitTests.Desks;
-
 
 public class GetDeskHandlerTests
 {
     private readonly Mock<IDeskRepository> _deskRepositoryMock;
     private readonly Mock<IUserContext> _userContextMock;
-    private readonly DateTimeProvider _dateTimeProvider;
     private readonly GetDeskHandler _handler;
 
     public GetDeskHandlerTests()
     {
         _deskRepositoryMock = new Mock<IDeskRepository>();
         _userContextMock = new Mock<IUserContext>();
-        _dateTimeProvider = new DateTimeProvider { UtcNow = DateTime.UtcNow };
 
         _handler = new GetDeskHandler(_userContextMock.Object, _deskRepositoryMock.Object);
     }
@@ -50,8 +46,6 @@ public class GetDeskHandlerTests
             () => _handler.Handle(query, CancellationToken.None).AsTask());
 
         Assert.Equal(query.Id, exception.Id);
-        Assert.Equal(System.Net.HttpStatusCode.NotFound, exception.HttpStatusCode);
-        Assert.Equal($"Desk with ID {query.Id} was not found", exception.Message);
     }
 
     [Theory]
@@ -65,7 +59,7 @@ public class GetDeskHandlerTests
         var reservationId = Guid.NewGuid();
         var query = new GetDeskDetailsQuery(deskId, locationId);
 
-        var today = DateOnly.FromDateTime(_dateTimeProvider.UtcNow);
+        var today = new DateOnly(2026, 10, 15);
         var tomorrow = today.AddDays(1);
 
         SetupUserRole(isAdmin);

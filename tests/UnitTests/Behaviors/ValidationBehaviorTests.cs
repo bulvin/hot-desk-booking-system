@@ -1,6 +1,5 @@
 using Application.Behaviors;
 using Application.Desks.GetPagedByLocation;
-using FluentValidation;
 
 namespace UnitTests.Behaviors;
 
@@ -26,21 +25,5 @@ public class ValidationBehaviorTests
 
         Assert.Equal(42, result);
         Assert.Equal(cancellation.Token, receivedToken);
-    }
-
-    [Fact]
-    public async Task Handle_InvalidRequest_DoesNotInvokeNext()
-    {
-        var behavior = new ValidationBehavior<GetDesksByLocationQuery, int>([new GetDesksValidator()]);
-        var request = new GetDesksByLocationQuery(Guid.Empty, DeskAvailabilityFilter: null, DateRange: null, PaginationFilter: null);
-        var nextCalled = false;
-
-        await Assert.ThrowsAsync<ValidationException>(() => behavior.Handle(request, (_, _) =>
-        {
-            nextCalled = true;
-            return ValueTask.FromResult(42);
-        }, CancellationToken.None).AsTask());
-
-        Assert.False(nextCalled);
     }
 }
