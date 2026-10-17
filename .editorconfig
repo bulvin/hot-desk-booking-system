@@ -121,6 +121,6 @@ dotnet_diagnostic.CA1515.severity = none
 [src/Web.Api/Infrastructure/GlobalExceptionHandler.cs]
 dotnet_diagnostic.CA1812.severity = none
 
-[tests/UnitTests/**/*.cs]
+[tests/{UnitTests,IntegrationTests}/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.MA0051.severity = none

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Application.Desks.ChangeAvailability;
@@ -8,7 +7,6 @@ using Application.Desks.Create;
 using Application.Desks.GetDetails;
 using Application.Desks.GetPagedByLocation;
 using Application.Dtos;
-using Application.Interfaces;
 using Application.Locations.Update;
 using Application.Reservations.Cancel;
 using Application.Reservations.ChangeDesk;
@@ -20,118 +18,54 @@ using FluentValidation;
 using FluentValidation.Results;
 using Infrastructure.Authentication;
 using Mediator;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Swashbuckle.AspNetCore.Swagger;
-using Web.Api.Endpoints;
-using Web.Api.Extensions;
-using Web.Api.Infrastructure;
 
-namespace UnitTests.Endpoints;
+namespace IntegrationTests.Endpoints;
 
 public sealed class EndpointTests : IAsyncLifetime
 {
-    private readonly Mock<ISender> _sender = new(MockBehavior.Strict);
+    private readonly EndpointTestHost _host = new();
+    private Mock<ISender> Sender => _host.Sender;
+    private HttpClient Client => _host.Client;
 
-    private readonly WebApplication _app;
-    private readonly HttpClient _client = new();
+    public ValueTask InitializeAsync() => _host.InitializeAsync();
 
-    public EndpointTests()
-    {
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Production });
-        builder.WebHost.UseUrls("http://127.0.0.1:0");
-        builder.Logging.ClearProviders();
-        builder.Services.AddSingleton(_sender.Object);
-
-        builder.Services.AddHttpContextAccessor();
-        builder.Services.AddScoped<IUserContext>(_ => new Mock<IUserContext>(MockBehavior.Strict).Object);
-
-
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        builder.Services.AddAuthorizationBuilder()
-            .AddPolicy(PolicyNames.Admin, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin));
-        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-        builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize);
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
-
-        _app = builder.Build();
-        _app.UseExceptionHandler();
-        _app.UseStatusCodePages();
-        _app.UseAuthentication();
-        _app.Use(async (context, next) =>
-        {
-            if (context.Request.Headers.TryGetValue("Test-Role", out var role))
-            {
-                context.User = new ClaimsPrincipal(new ClaimsIdentity(
-                    [new Claim(ClaimTypes.Role, role.ToString())], "Test"));
-            }
-
-            await next(context);
-        });
-        _app.UseAuthorization();
-
-        _app.MapAuthEndpoints();
-        _app.MapLocationEndpoints();
-        _app.MapDeskEndpoints();
-        _app.MapReservationEndpoints();
-        _client.DefaultRequestHeaders.Add("Test-Role", PolicyNames.Admin);
-    }
-
-    public async ValueTask InitializeAsync()
-    {
-        await _app.StartAsync(TestContext.Current.CancellationToken);
-        _client.BaseAddress = new Uri(_app.Urls.Single());
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        _client.Dispose();
-        await _app.DisposeAsync();
-    }
-
-    [Fact]
-    public void Swagger_DocumentsAllGroupedEndpoints()
-    {
-        var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
-
-        Assert.Equal(12, document.Paths.Values.Sum(path => path.Operations?.Count ?? 0));
-        Assert.Contains("/api/profile", document.Paths.Keys, StringComparer.Ordinal);
-        Assert.Contains("/api/locations", document.Paths.Keys, StringComparer.Ordinal);
-        Assert.Contains("/api/locations/{locationId}/desks", document.Paths.Keys, StringComparer.Ordinal);
-        Assert.Contains("/api/reservations", document.Paths.Keys, StringComparer.Ordinal);
-        var cancel = Assert.Single(document.Paths["/api/reservations/{id}/cancel"].Operations!).Value;
-        foreach (var status in new[] { "204", "401", "403", "404", "409" })
-            Assert.Contains(status, cancel.Responses!.Keys, StringComparer.Ordinal);
-    }
+    public ValueTask DisposeAsync() => _host.DisposeAsync();
 
     [Theory]
     [InlineData("Administrator")]
     [InlineData("Employee")]
     public async Task Cancel_DispatchesRouteIdAndReturnsNoContent(string role)
     {
+        // Arrange
         var id = Guid.NewGuid();
-        _client.DefaultRequestHeaders.Remove("Test-Role");
-        _client.DefaultRequestHeaders.Add("Test-Role", role);
-        _sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ReturnsAsync(Unit.Value);
-        using var response = await _client.PutAsync($"/api/reservations/{id}/cancel", null, TestContext.Current.CancellationToken);
+        Client.DefaultRequestHeaders.Remove("Test-Role");
+        Client.DefaultRequestHeaders.Add("Test-Role", role);
+        Sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ReturnsAsync(Unit.Value);
+
+        // Act
+        using var response = await Client.PutAsync($"/api/reservations/{id}/cancel", null, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        _sender.Verify(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>()), Times.Once);
+        Sender.Verify(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Cancel_AnonymousIsUnauthorized()
     {
-        _client.DefaultRequestHeaders.Remove("Test-Role");
+        // Arrange
+        Client.DefaultRequestHeaders.Remove("Test-Role");
         var path = $"/api/reservations/{Guid.NewGuid()}/cancel";
-        using var response = await _client.PutAsync(path, null, TestContext.Current.CancellationToken);
+
+        // Act
+        using var response = await Client.PutAsync(path, null, TestContext.Current.CancellationToken);
+
+        // Assert
         await AssertProblemResponse(response, HttpStatusCode.Unauthorized, $"PUT {path}", "15.5.2");
-        Assert.Empty(_sender.Invocations);
+        Assert.Empty(Sender.Invocations);
     }
 
     [Theory]
@@ -140,6 +74,7 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData(409, "15.5.10")]
     public async Task Cancel_ReturnsDocumentedProblems(int status, string section)
     {
+        // Arrange
         var id = Guid.NewGuid();
         Exception exception = status switch
         {
@@ -147,21 +82,28 @@ public sealed class EndpointTests : IAsyncLifetime
             404 => new ReservationNotFoundException(id),
             _ => new ReservationConflictException(id)
         };
-        _sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+        Sender.Setup(s => s.Send(new CancelReservationCommand(id), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
         var path = $"/api/reservations/{id}/cancel";
-        using var response = await _client.PutAsync(path, null, TestContext.Current.CancellationToken);
+
+        // Act
+        using var response = await Client.PutAsync(path, null, TestContext.Current.CancellationToken);
+
+        // Assert
         await AssertProblemResponse(response, (HttpStatusCode)status, $"PUT {path}", section);
     }
 
     [Fact]
     public async Task UnexpectedFailure_ReturnsGenericServerProblem()
     {
-        _sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
+        // Arrange
+        Sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Secret database connection"));
 
-        using var response = await _client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
+        // Act
+        using var response = await Client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
             new { Name = "Desk" }, TestContext.Current.CancellationToken);
 
+        // Assert
         await AssertProblemResponse(response, HttpStatusCode.InternalServerError, "POST /api/locations/11111111-1111-1111-1111-111111111111/desks", "15.6.1");
         var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("Secret", body, StringComparison.Ordinal);
@@ -172,29 +114,41 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("GET", "/api/locations/11111111-1111-1111-1111-111111111111/desks?page=invalid", HttpStatusCode.BadRequest, "15.5.1")]
     public async Task EmptyErrors_ReturnProblemDetails(string method, string path, HttpStatusCode status, string section)
     {
+        // Arrange
         using var request = new HttpRequestMessage(new HttpMethod(method), path);
         request.Headers.Accept.ParseAdd("application/problem+json");
-        using var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Act
+        using var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
         await AssertProblemResponse(response, status, $"{method} {path.Split('?')[0]}", section);
-        Assert.Empty(_sender.Invocations);
+        Assert.Empty(Sender.Invocations);
     }
 
     [Theory]
-    [InlineData("application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
-    [InlineData("text/plain", "not-json", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
-    public async Task InvalidBody_ReturnsProblemDetails(string contentType, string body, HttpStatusCode status, string section)
+    [InlineData("POST", "/api/locations/11111111-1111-1111-1111-111111111111/desks", "application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
+    [InlineData("POST", "/api/locations/11111111-1111-1111-1111-111111111111/desks", "text/plain", "text", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
+    [InlineData("PUT", "/api/locations/11111111-1111-1111-1111-111111111111", "application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
+    [InlineData("PUT", "/api/locations/11111111-1111-1111-111111111111", "text/plain", "text", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
+    public async Task InvalidBody_ReturnsProblemDetails(string method, string path, string contentType, string body, HttpStatusCode status, string section)
     {
-        using var content = new StringContent(body, Encoding.UTF8, contentType);
-        using var response = await _client.PostAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks", content, TestContext.Current.CancellationToken);
+        // Arrange
+        using var request = new HttpRequestMessage(new HttpMethod(method), path)
+        {
+            Content = new StringContent(body, Encoding.UTF8, contentType)
+        };
 
-        await AssertProblemResponse(response, status, "POST /api/locations/11111111-1111-1111-1111-111111111111/desks", section);
-        Assert.Empty(_sender.Invocations);
+        // Act
+        using var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        await AssertProblemResponse(response, status, $"{method} {path}", section);
+        Assert.Empty(Sender.Invocations);
     }
 
     [Theory]
     [InlineData("/api/profile", "GET", "200,401,500")]
-
     [InlineData("/api/locations", "POST", "201,400,401,403,409,413,415,500")]
     [InlineData("/api/locations/{id}", "PUT", "200,400,401,403,404,409,413,415,500")]
     [InlineData("/api/locations/{id}", "DELETE", "204,400,401,403,404,500")]
@@ -208,9 +162,14 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("/api/reservations/{id}/cancel", "PUT", "204,400,401,403,404,409,413,415,500")]
     public void Swagger_DocumentsResponseCodesAndProblemSchemas(string path, string method, string expectedCodes)
     {
-        var document = _app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
+        // Arrange
+
+        // Act
+        var document = _host.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
         var operation = document.Paths[path].Operations!
             .Single(pair => string.Equals(pair.Key.ToString(), method, StringComparison.OrdinalIgnoreCase)).Value;
+
+        // Assert
         Assert.NotNull(operation.Responses);
         Assert.Equal(expectedCodes.Split(',').Order(StringComparer.Ordinal),
             operation.Responses.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
@@ -229,58 +188,64 @@ public sealed class EndpointTests : IAsyncLifetime
     [Fact]
     public async Task MissingDesk_ReturnsProblemDetailsThroughExceptionMiddleware()
     {
+        // Arrange
         var deskId = Guid.NewGuid();
         var locationId = Guid.NewGuid();
         var exception = new DeskNotFoundException(deskId);
-        _sender.Setup(sender => sender.Send(new GetDeskDetailsQuery(deskId, locationId),
+        Sender.Setup(sender => sender.Send(new GetDeskDetailsQuery(deskId, locationId),
             It.IsAny<CancellationToken>())).ThrowsAsync(exception);
 
-        using var response = await _client.GetAsync($"/api/locations/{locationId}/desks/{deskId}",
+        // Act
+        using var response = await Client.GetAsync($"/api/locations/{locationId}/desks/{deskId}",
             TestContext.Current.CancellationToken);
-        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        // Assert
+        var problem = await AssertProblemResponse(response, HttpStatusCode.NotFound,
+            $"GET /api/locations/{locationId}/desks/{deskId}", "15.5.5");
         Assert.Equal("Not Found", problem.GetProperty("title").GetString());
         Assert.Equal(exception.Message, problem.GetProperty("detail").GetString());
-        Assert.Equal($"GET /api/locations/{locationId}/desks/{deskId}", problem.GetProperty("instance").GetString());
-        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
-        Assert.Equal(DateTimeKind.Utc, problem.GetProperty("timestamp").GetDateTime().Kind);
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Fact]
     public async Task InvalidDesk_ReturnsValidationProblemWithBadRequestStatus()
     {
-        _sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
+        // Arrange
+        Sender.Setup(sender => sender.Send(It.IsAny<CreateDeskCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ValidationException([new ValidationFailure("Name", "Name is invalid.")]));
-        using var response = await _client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
+
+        // Act
+        using var response = await Client.PostAsJsonAsync("/api/locations/11111111-1111-1111-1111-111111111111/desks",
             new { Name = "" }, TestContext.Current.CancellationToken);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal("Name is invalid.", problem.GetProperty("errors").GetProperty("Name")[0].GetString());
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Fact]
     public async Task CreateDesk_UsesRouteLocationAndReturnsDetailsUrl()
     {
+        // Arrange
         var locationId = Guid.NewGuid();
         var desk = new DeskDto(Guid.NewGuid(), "Window desk", null, locationId, true);
-        _sender.Setup(sender => sender.Send(It.Is<CreateDeskCommand>(command =>
+        Sender.Setup(sender => sender.Send(It.Is<CreateDeskCommand>(command =>
                 command.LocationId == locationId && command.Name == desk.Name && command.Description == null),
             It.IsAny<CancellationToken>())).ReturnsAsync(desk);
 
-        using var response = await _client.PostAsJsonAsync($"/api/locations/{locationId}/desks",
+        // Act
+        using var response = await Client.PostAsJsonAsync($"/api/locations/{locationId}/desks",
             new { desk.Name, LocationId = Guid.NewGuid() }, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal($"{_client.BaseAddress}api/locations/{locationId}/desks/{desk.Id}",
+        Assert.Equal($"{Client.BaseAddress}api/locations/{locationId}/desks/{desk.Id}",
             response.Headers.Location?.ToString());
         Assert.Equal(desk, await response.Content.ReadFromJsonAsync<DeskDto>(TestContext.Current.CancellationToken));
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Theory]
@@ -288,50 +253,59 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("?isAvailable=true&isBookable=false&startDate=2026-10-09&endDate=2026-10-10&page=2&pageSize=5")]
     public async Task GetDesks_BindsOptionalQueryParameters(string queryString)
     {
+        // Arrange
         var locationId = Guid.NewGuid();
         var hasFilters = queryString.Length > 0;
         var expected = new GetDesksByLocationQuery(locationId,
             new DeskAvailabilityFilter(hasFilters ? true : null, hasFilters ? false : null),
             new DateRange(hasFilters ? new DateOnly(2026, 10, 9) : null, hasFilters ? new DateOnly(2026, 10, 10) : null),
             new PaginationFilter(hasFilters ? 2 : null, hasFilters ? 5 : null));
-        _sender.Setup(sender => sender.Send(expected, It.IsAny<CancellationToken>()))
+        Sender.Setup(sender => sender.Send(expected, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedDto<DeskDto>([], 1, 10, 0));
 
-        using var response = await _client.GetAsync($"/api/locations/{locationId}/desks{queryString}",
+        // Act
+        using var response = await Client.GetAsync($"/api/locations/{locationId}/desks{queryString}",
             TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Fact]
     public async Task ChangeAvailability_BindsQueryAndReturnsNoContent()
     {
+        // Arrange
         var locationId = Guid.NewGuid();
         var deskId = Guid.NewGuid();
-        _sender.Setup(sender => sender.Send(new ChangeDeskAvailabilityCommand(deskId, locationId, false),
+        Sender.Setup(sender => sender.Send(new ChangeDeskAvailabilityCommand(deskId, locationId, false),
             It.IsAny<CancellationToken>())).ReturnsAsync(Unit.Value);
 
-        using var response = await _client.PutAsync($"/api/locations/{locationId}/desks/{deskId}?isAvailable=false",
+        // Act
+        using var response = await Client.PutAsync($"/api/locations/{locationId}/desks/{deskId}?isAvailable=false",
             null, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Fact]
     public async Task ChangeReservedDesk_UsesRouteId()
     {
+        // Arrange
         var reservationId = Guid.NewGuid();
         var deskId = Guid.NewGuid();
-        _sender.Setup(sender => sender.Send(new ChangeDeskCommand(reservationId, deskId),
+        Sender.Setup(sender => sender.Send(new ChangeDeskCommand(reservationId, deskId),
             It.IsAny<CancellationToken>())).ReturnsAsync(Unit.Value);
 
-        using var response = await _client.PutAsJsonAsync($"/api/reservations/{reservationId}/change-desk",
+        // Act
+        using var response = await Client.PutAsJsonAsync($"/api/reservations/{reservationId}/change-desk",
             new { DeskId = deskId, Id = Guid.NewGuid() }, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Theory]
@@ -345,33 +319,42 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData("GET", "/api/profile", null, HttpStatusCode.Unauthorized)]
     public async Task ProtectedEndpoints_EnforceAuthorization(string method, string path, string? role, HttpStatusCode status)
     {
-        _client.DefaultRequestHeaders.Remove("Test-Role");
+        // Arrange
+        Client.DefaultRequestHeaders.Remove("Test-Role");
         if (role is not null)
         {
-            _client.DefaultRequestHeaders.Add("Test-Role", role);
+            Client.DefaultRequestHeaders.Add("Test-Role", role);
         }
 
         using var request = new HttpRequestMessage(new HttpMethod(method), path);
-        using var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Act
+        using var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
         await AssertProblemResponse(response, status, $"{method} {path}",
             status == HttpStatusCode.Unauthorized ? "15.5.2" : "15.5.4");
         if (status == HttpStatusCode.Unauthorized)
             Assert.Contains(response.Headers.WwwAuthenticate, header => string.Equals(header.Scheme, "Bearer", StringComparison.Ordinal));
-        Assert.Empty(_sender.Invocations);
+        Assert.Empty(Sender.Invocations);
     }
 
     [Fact]
     public async Task UpdateLocation_UsesRouteIdAndReturnsUpdatedDetails()
     {
+        // Arrange
         var id = Guid.NewGuid();
         var address = new AddressDto("Street", "10", "City", "00-001");
         var result = new LocationDto(id, "Updated", address);
-        _sender.Setup(sender => sender.Send(new UpdateLocationCommand(id, result.Name, address), It.IsAny<CancellationToken>())).ReturnsAsync(result);
-        using var response = await _client.PutAsJsonAsync($"/api/locations/{id}", new { result.Name, Address = address, Id = Guid.NewGuid() }, TestContext.Current.CancellationToken);
+        Sender.Setup(sender => sender.Send(new UpdateLocationCommand(id, result.Name, address), It.IsAny<CancellationToken>())).ReturnsAsync(result);
+
+        // Act
+        using var response = await Client.PutAsJsonAsync($"/api/locations/{id}", new { result.Name, Address = address, Id = Guid.NewGuid() }, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(result, await response.Content.ReadFromJsonAsync<LocationDto>(TestContext.Current.CancellationToken));
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
     [Theory]
@@ -380,6 +363,7 @@ public sealed class EndpointTests : IAsyncLifetime
     [InlineData(409, "15.5.10")]
     public async Task UpdateLocation_FailuresReturnProblemDetails(int status, string section)
     {
+        // Arrange
         var id = Guid.NewGuid();
         Exception exception = status switch
         {
@@ -387,25 +371,17 @@ public sealed class EndpointTests : IAsyncLifetime
             404 => new LocationNotFoundException(id),
             _ => new LocationAlreadyExistsException("Duplicate", new Address("Street", "1", "City", "Code"))
         };
-        _sender.Setup(sender => sender.Send(It.IsAny<UpdateLocationCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
-        using var response = await _client.PutAsJsonAsync($"/api/locations/{id}", new { Name = "Name", Address = new AddressDto("Street", "1", "City", "Code") }, TestContext.Current.CancellationToken);
+        Sender.Setup(sender => sender.Send(It.IsAny<UpdateLocationCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+
+        // Act
+        using var response = await Client.PutAsJsonAsync($"/api/locations/{id}", new { Name = "Name", Address = new AddressDto("Street", "1", "City", "Code") }, TestContext.Current.CancellationToken);
+
+        // Assert
         await AssertProblemResponse(response, (HttpStatusCode)status, $"PUT /api/locations/{id}", section);
-        _sender.VerifyAll();
+        Sender.VerifyAll();
     }
 
-    [Theory]
-    [InlineData("application/json", "{", HttpStatusCode.BadRequest, "15.5.1")]
-    [InlineData("text/plain", "text", HttpStatusCode.UnsupportedMediaType, "15.5.16")]
-    public async Task UpdateLocation_InvalidBodyDoesNotDispatch(string contentType, string body, HttpStatusCode status, string section)
-    {
-        var id = Guid.NewGuid();
-        using var content = new StringContent(body, Encoding.UTF8, contentType);
-        using var response = await _client.PutAsync($"/api/locations/{id}", content, TestContext.Current.CancellationToken);
-        await AssertProblemResponse(response, status, $"PUT /api/locations/{id}", section);
-        Assert.Empty(_sender.Invocations);
-    }
-
-    private static async Task AssertProblemResponse(HttpResponseMessage response, HttpStatusCode status, string instance, string section)
+    private static async Task<JsonElement> AssertProblemResponse(HttpResponseMessage response, HttpStatusCode status, string instance, string section)
     {
         Assert.Equal(status, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -416,5 +392,6 @@ public sealed class EndpointTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("title").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
         Assert.Equal(DateTimeKind.Utc, problem.GetProperty("timestamp").GetDateTime().Kind);
+        return problem;
     }
 }
