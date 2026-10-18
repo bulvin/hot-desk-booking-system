@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Build, test, and format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore hot-desk-booking-system.slnx
+      - name: Release build
+        id: build
+        run: dotnet build hot-desk-booking-system.slnx --configuration Release --no-restore -warnaserror
+      - name: Unit tests
+        run: dotnet test tests/UnitTests/UnitTests.csproj --configuration Release --no-build --logger "trx;LogFileName=unit.trx" --results-directory TestResults/unit
+      - name: Integration tests (PostgreSQL and Keycloak)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: dotnet test tests/IntegrationTests/IntegrationTests.csproj --configuration Release --no-build --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration
+      - name: Verify formatting
+        run: dotnet format hot-desk-booking-system.slnx --no-restore --verify-no-changes --diagnostics IDE0005 IDE0055 IDE0161 IDE1006 --exclude src/Infrastructure/Data/Migrations
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**/*.trx
+          if-no-files-found: warn
+          retention-days: 14
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build API image
+        run: docker build --file src/Web.Api/Dockerfile --tag hotdesk:ci .

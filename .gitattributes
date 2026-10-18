@@ -1,0 +1,2 @@
+# Match .editorconfig when checking out C# sources on Linux and Windows.
+*.cs text eol=crlf

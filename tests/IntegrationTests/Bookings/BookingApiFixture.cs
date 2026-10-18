@@ -20,7 +20,15 @@ public sealed class BookingApiFixture : IAsyncLifetime
 {
     public static readonly Guid EmployeeId = new("ce9e947b-4bb4-490f-8e56-624dfabfb803");
     public static readonly DateOnly Today = new(2026, 10, 16);
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18")
+        .WithCreateParameterModifier(parameters =>
+        {
+            parameters.HostConfig ??= new();
+            parameters.HostConfig.Memory = 256L * 1024 * 1024;
+            parameters.HostConfig.MemorySwap = parameters.HostConfig.Memory;
+            parameters.HostConfig.NanoCPUs = 1_000_000_000;
+        })
+        .Build();
     private readonly string _realmDirectory = Path.Combine(Path.GetTempPath(), $"hotdesk-tests-{Guid.NewGuid():N}");
     private readonly string _password = $"Test-{Guid.NewGuid():N}!";
     private readonly string _clientSecret = Guid.NewGuid().ToString("N");
@@ -69,6 +77,14 @@ public sealed class BookingApiFixture : IAsyncLifetime
             .WithRealm(realmPath)
             .WithEnvironment("JAVA_OPTS_KC_HEAP", "-Xms64m -Xmx512m")
             .WithEnvironment("JAVA_OPTS_APPEND", "-XX:ActiveProcessorCount=2")
+            .WithCreateParameterModifier(parameters =>
+            {
+                parameters.HostConfig ??= new();
+                // Leave room beyond the 512 MiB Java heap for native memory and startup.
+                parameters.HostConfig.Memory = 1024L * 1024 * 1024;
+                parameters.HostConfig.MemorySwap = parameters.HostConfig.Memory;
+                parameters.HostConfig.NanoCPUs = 2_000_000_000;
+            })
             .Build();
         await Task.WhenAll(_postgres.StartAsync(cancellationToken), _keycloak.StartAsync(cancellationToken));
         var authority = $"{_keycloak.GetBaseAddress().TrimEnd('/')}/realms/hotdesk";
