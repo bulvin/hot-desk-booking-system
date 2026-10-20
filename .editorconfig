@@ -1,35 +1,45 @@
+# Stop searching parent directories for EditorConfig settings.
 root = true
 
+# Repository defaults. More specific sections below override matching settings.
 [*]
 charset = utf-8
 indent_style = space
 indent_size = 4
 end_of_line = crlf
+# Do not impose a final-newline policy through EditorConfig.
 insert_final_newline = unset
 trim_trailing_whitespace = true
 
+# Preserve Markdown trailing spaces because two spaces can represent a line break.
 [*.md]
 trim_trailing_whitespace = false
 
+# Use two-space indentation for structured configuration files.
 [*.{json,yml,yaml,slnx}]
 indent_size = 2
 
+# Frontend uses LF, matching Prettier and .gitattributes on Windows and Linux.
 [frontend/**]
 end_of_line = lf
 
+# C# diagnostics and style. Directory.Build.props enables analyzers and warnings as errors.
 [*.cs]
+# Nullable safety: reject possible null conversion, assignment, dereference, return and arguments.
 dotnet_diagnostic.CS8600.severity = error
 dotnet_diagnostic.CS8601.severity = error
 dotnet_diagnostic.CS8602.severity = error
 dotnet_diagnostic.CS8603.severity = error
 dotnet_diagnostic.CS8604.severity = error
+# CA1062: explicit argument null checks are not required for every public method.
 dotnet_diagnostic.CA1062.severity = none
 
-
+# CA2007 / MA0004 / RCS1090: do not enforce ConfigureAwait calls in this application.
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.MA0004.severity = none
 dotnet_diagnostic.RCS1090.severity = none
 
+# C# layout: System imports first, consistent braces, spacing and file-scoped namespaces.
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 csharp_new_line_before_open_brace = all
@@ -45,19 +55,23 @@ csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = false
 csharp_style_namespace_declarations = file_scoped
 
+# Naming rules connect a symbol group to a style; the following entries define both.
 dotnet_naming_rule.interfaces.symbols = interfaces
 dotnet_naming_rule.interfaces.style = interface_pascal_case
 dotnet_naming_rule.interfaces.severity = error
+# Interfaces: PascalCase with an I prefix, for example IDeskRepository.
 dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_style.interface_pascal_case.required_prefix = I
 dotnet_naming_style.interface_pascal_case.capitalization = pascal_case
 
+# Types, properties and events: PascalCase, for example Reservation and StartDate.
 dotnet_naming_rule.types_and_members.symbols = types_and_members
 dotnet_naming_rule.types_and_members.style = pascal_case
 dotnet_naming_rule.types_and_members.severity = error
 dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, delegate, property, event
 dotnet_naming_style.pascal_case.capitalization = pascal_case
 
+# Private fields: underscore plus camelCase, for example _deskRepository.
 dotnet_naming_rule.private_fields.symbols = private_fields
 dotnet_naming_rule.private_fields.style = underscore_camel_case
 dotnet_naming_rule.private_fields.severity = error
@@ -66,64 +80,72 @@ dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.underscore_camel_case.required_prefix = _
 dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 
+# Constants: PascalCase, for example MaximumBookingDays.
 dotnet_naming_rule.constants.symbols = constants
 dotnet_naming_rule.constants.style = pascal_case
 dotnet_naming_rule.constants.severity = error
 dotnet_naming_symbols.constants.applicable_kinds = field
 dotnet_naming_symbols.constants.required_modifiers = const
 
+# Static readonly fields: PascalCase. Modifier-specific rules take precedence over general field rules.
 dotnet_naming_rule.static_readonly_fields.symbols = static_readonly_fields
 dotnet_naming_rule.static_readonly_fields.style = pascal_case
 dotnet_naming_rule.static_readonly_fields.severity = error
 dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
 dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
 
-# EF generates these methods and timestamped file names; keep migrations intact.
-
-
+# CA1034: allow visible nested types for all C# files. This setting is not limited to migrations.
 dotnet_diagnostic.CA1034.severity = none
+# EF-generated migrations: preserve generated names and long migration methods.
 [src/Infrastructure/Data/Migrations/*.cs]
+# Treat migration sources as generated; analyzer participation depends on each analyzer.
 generated_code = true
+# MA0048: allow timestamped migration filenames that differ from the type name.
 dotnet_diagnostic.MA0048.severity = none
+# MA0051: do not enforce the method-length limit within this section.
 dotnet_diagnostic.MA0051.severity = none
 
+# Domain exceptions keep their domain-specific constructors instead of the standard exception overload set.
 [src/Domain/Exceptions/{*.cs,**/*.cs}]
+# CA1032 / RCS1194: do not require standard exception constructors in these files.
 dotnet_diagnostic.CA1032.severity = none
 dotnet_diagnostic.RCS1194.severity = none
 
-
+# CA1040: command/query marker interfaces intentionally declare no members.
 [src/Application/Interfaces/CQRS/I{Command,Query}.cs]
 dotnet_diagnostic.CA1040.severity = none
 
-
+# Legacy path-specific exception for nested types; this section applies only if the file exists.
 [src/Application/HttpContextExtensions.cs]
 dotnet_diagnostic.CA1034.severity = none
 
-
+# Allow nested types associated with the C# extension-block registration pattern.
 [src/Application/ApplicationServiceCollectionExtensions.cs]
 dotnet_diagnostic.CA1034.severity = none
 
+# Allow nested types associated with the C# extension-block registration pattern.
 [src/Infrastructure/InfrastructureServiceCollectionExtensions.cs]
 dotnet_diagnostic.CA1034.severity = none
 
-
-
-
+# CA1700: Reserved is an intentional business status, not a placeholder enum member.
 [src/Domain/Reservations/Status.cs]
 dotnet_diagnostic.CA1700.severity = none
 
-
+# CA1515: allow public controller types; retained for files matching this controller path.
 [src/Web.Api/Controllers/*.cs]
 dotnet_diagnostic.CA1515.severity = none
 
-
+# CA1515: extension helper types may be public rather than being forced to internal.
 [src/Web.Api/Extensions/*.cs]
 dotnet_diagnostic.CA1515.severity = none
 
-
+# CA1812: ASP.NET Core creates this internal handler through DI registration.
 [src/Web.Api/Infrastructure/GlobalExceptionHandler.cs]
 dotnet_diagnostic.CA1812.severity = none
 
+# Test-only allowances: descriptive underscore names and longer Arrange/Act/Assert scenarios.
 [tests/{UnitTests,IntegrationTests}/**/*.cs]
+# CA1707: allow underscores in test method names.
 dotnet_diagnostic.CA1707.severity = none
+# MA0051: do not enforce the method-length limit within this section.
 dotnet_diagnostic.MA0051.severity = none
