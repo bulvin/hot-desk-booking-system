@@ -6,6 +6,15 @@ namespace Infrastructure.Repositories;
 
 public class LocationRepository(AppDbContext dbContext) : ILocationRepository
 {
+    public async Task<(IReadOnlyList<Location> Items, int Total)> GetPage(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Locations.AsNoTracking();
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query.OrderBy(x => x.Name).ThenBy(x => x.Id)
+            .Skip((int)Math.Min(((long)page - 1) * pageSize, int.MaxValue)).Take(pageSize).ToListAsync(cancellationToken);
+        return (items, total);
+    }
+
     public void Add(Location location)
     {
         dbContext.Add(location);

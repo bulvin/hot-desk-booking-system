@@ -409,3 +409,10 @@ src/.idea/
 .idea
 .run
 /.tools/
+
+# React frontend artifacts and local overrides
+/frontend/dist/
+/frontend/.npm-cache/
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.*.local

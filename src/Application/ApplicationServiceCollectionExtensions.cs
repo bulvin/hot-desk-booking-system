@@ -18,7 +18,7 @@ public static class ApplicationServiceCollectionExtensions
                 options.ServiceLifetime = ServiceLifetime.Scoped;
                 options.GenerateTypesAsInternal = true;
                 options.Assemblies = [typeof(ApplicationServiceCollectionExtensions)];
-                options.PipelineBehaviors = [typeof(ValidationBehavior<,>)];
+                options.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)];
             });
 
             return services;

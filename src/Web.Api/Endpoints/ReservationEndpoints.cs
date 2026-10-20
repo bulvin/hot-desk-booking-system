@@ -1,5 +1,7 @@
+using Application.Browsing;
 using Application.Dtos;
 using Application.Reservations.BookDesk;
+using Application.Reservations.Browse;
 using Application.Reservations.Cancel;
 using Application.Reservations.ChangeDesk;
 using Mediator;
@@ -21,6 +23,12 @@ internal static class ReservationEndpoints
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        group.MapGet("/mine", async (ISender sender, CancellationToken cancellationToken,
+                int page = 1, int pageSize = 20) =>
+            TypedResults.Ok(await sender.Send(new GetMyReservationsQuery(new PageRequest(page, pageSize)), cancellationToken)))
+            .WithSummary("List only the current user's reservations")
+            .WithDescription("Includes reservation history, ordered by start date descending and ID. Dates use the UTC calendar.");
 
         group.MapPost("", BookDesk)
             .WithSummary("Book a desk")
