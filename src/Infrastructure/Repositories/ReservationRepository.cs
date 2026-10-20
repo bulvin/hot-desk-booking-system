@@ -8,6 +8,16 @@ public class ReservationRepository(AppDbContext dbContext) : IReservationReposit
 {
     private readonly DbSet<Reservation> _reservations = dbContext.Reservations;
 
+    public async Task<(IReadOnlyList<Reservation> Items, int Total)> GetPageForUser(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = _reservations.AsNoTracking().Where(x => x.UserId == userId);
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query.Include(x => x.Desk).ThenInclude(x => x.Location)
+            .OrderByDescending(x => x.StartDate).ThenBy(x => x.Id)
+            .Skip((int)Math.Min(((long)page - 1) * pageSize, int.MaxValue)).Take(pageSize).ToListAsync(cancellationToken);
+        return (items, total);
+    }
+
     public Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default)
     {
         return ReservationsForDesk(deskId).AnyAsync(cancellationToken);

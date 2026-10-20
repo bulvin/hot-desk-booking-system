@@ -1,4 +1,6 @@
+using Application.Browsing;
 using Application.Dtos;
+using Application.Locations.Browse;
 using Application.Locations.Create;
 using Application.Locations.Delete;
 using Application.Locations.Update;
@@ -13,6 +15,14 @@ internal static class LocationEndpoints
 {
     internal static void MapLocationEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("/api/locations", async (ISender sender, CancellationToken cancellationToken,
+                int page = 1, int pageSize = 20) =>
+            TypedResults.Ok(await sender.Send(new GetLocationsQuery(new PageRequest(page, pageSize)), cancellationToken)))
+            .RequireAuthorization().WithTags("Locations").WithSummary("Browse office locations")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
         var group = endpoints.MapGroup("/api/locations")
             .WithTags("Locations")
             .RequireAuthorization(PolicyNames.Admin)

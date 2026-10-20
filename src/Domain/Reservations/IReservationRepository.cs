@@ -2,6 +2,7 @@ namespace Domain.Reservations;
 
 public interface IReservationRepository
 {
+    Task<(IReadOnlyList<Reservation> Items, int Total)> GetPageForUser(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<bool> HasReservationForDesk(Guid deskId, CancellationToken cancellationToken = default);
     void Add(Reservation reservation);
     void Update(Reservation reservation);
