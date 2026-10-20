@@ -2,55 +2,78 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
+using Serilog;
 using Web.Api.Endpoints;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services
-    .AddApplication()
-    .AddInfrastructure(builder.Configuration);
-
-builder.Services.AddHostedService<DatabaseInitializationHostedService>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
-builder.Services.ConfigureHttpJsonOptions(options =>
+try
 {
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    options.SerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize;
-});
+    builder.Services.AddSerilog((services, configuration) => configuration
+        .ReadFrom.Configuration(builder.Configuration)
+        .ReadFrom.Services(services));
 
+    builder.Services
+        .AddApplication()
+        .AddInfrastructure(builder.Configuration);
 
-var app = builder.Build();
+    builder.Services.AddHostedService<DatabaseInitializationHostedService>();
 
-app.UseExceptionHandler();
-app.UseStatusCodePages();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
+    builder.Services.ConfigureHttpJsonOptions(options =>
     {
-        options.OAuthClientId(builder.Configuration["Keycloak:SwaggerClientId"] ?? "hotdesk-swagger");
-        options.OAuthUsePkce();
-        options.EnablePersistAuthorization();
+        options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.SerializerOptions.Converters.Add(new DateOnlyJsonConverter());
     });
+
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails(options =>
+    {
+        options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize;
+    });
+
+
+    var app = builder.Build();
+
+    app.UseRequestLogging();
+    app.UseExceptionHandler();
+    app.UseStatusCodePages();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.OAuthClientId(builder.Configuration["Keycloak:SwaggerClientId"] ?? "hotdesk-swagger");
+            options.OAuthUsePkce();
+            options.EnablePersistAuthorization();
+        });
+    }
+
+    app.MapAuthEndpoints();
+    app.MapLocationEndpoints();
+    app.MapDeskEndpoints();
+    app.MapReservationEndpoints();
+
+    await app.RunAsync();
 }
-
-app.MapAuthEndpoints();
-app.MapLocationEndpoints();
-app.MapDeskEndpoints();
-app.MapReservationEndpoints();
-
-await app.RunAsync();
+#pragma warning disable S2139
+catch (Exception exception)
+#pragma warning restore S2139
+{
+    Log.Fatal(exception, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}

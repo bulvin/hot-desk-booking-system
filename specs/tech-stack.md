@@ -13,6 +13,8 @@ See [mission.md](mission.md) for the product scope and [roadmap.md](roadmap.md) 
 | Entity Framework Core and Npgsql | Let the application read and save data in PostgreSQL |
 | Docker Compose | Starts the API and database together for development |
 | Mailpit | Captures development email confirmation messages through SMTP |
+| Serilog | Writes structured application logs and HTTP request summaries to the console and Seq |
+| Seq | Collects structured logs for searching and analysis during local development |
 | Swagger | Shows the available API actions and lets developers try them |
 | xUnit and Moq | Test booking rules and other application behavior |
 

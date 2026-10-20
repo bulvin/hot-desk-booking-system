@@ -6,6 +6,7 @@ services:
       - Keycloak__Authority=http://localhost:8090/realms/hotdesk
       - Keycloak__BackchannelAuthority=http://keycloak:8080/realms/hotdesk
       - Keycloak__RequireHttpsMetadata=false
+      - Serilog__WriteTo__Seq__Args__serverUrl=http://seq:5341
     ports:
       - "8080:8080"
     volumes:
@@ -28,6 +29,17 @@ services:
       - "8090:8080"
     volumes:
       - ./keycloak/hotdesk-realm.json:/opt/keycloak/data/import/hotdesk-realm.json:ro
+
+  seq:
+    image: datalust/seq:2025.2
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "True"
+    ports:
+      - "5341:80"
+    volumes:
+      - ./.containers/seq:/data
 
   mailpit:
     image: axllent/mailpit:latest
