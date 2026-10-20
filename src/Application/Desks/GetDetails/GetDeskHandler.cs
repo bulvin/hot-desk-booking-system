@@ -9,7 +9,7 @@ using Domain.Users;
 
 namespace Application.Desks.GetDetails;
 
-public class GetDeskHandler(IUserContext userContext, IDeskRepository deskRepository)
+public class GetDeskHandler(IUserContext userContext, IDeskRepository deskRepository, IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetDeskDetailsQuery, DeskDetailsDto>
 {
     public async ValueTask<DeskDetailsDto> Handle(GetDeskDetailsQuery query, CancellationToken cancellationToken)
@@ -20,7 +20,12 @@ public class GetDeskHandler(IUserContext userContext, IDeskRepository deskReposi
         if (desk.LocationId != query.LocationId)
             throw new LocationNotFoundException(query.LocationId);
 
-        var activeReservation = desk.Reservations.FirstOrDefault();
+        var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
+        var activeReservation = desk.Reservations
+            .Where(r => r.Status == Status.Reserved && r.EndDate >= today)
+            .OrderBy(r => r.StartDate)
+            .ThenBy(r => r.Id)
+            .FirstOrDefault();
         ReservationWithUserDto? reservation = null;
         if (activeReservation is not null)
             reservation = CreateReservationDto(activeReservation);
@@ -34,9 +39,9 @@ public class GetDeskHandler(IUserContext userContext, IDeskRepository deskReposi
             reservation);
     }
 
-    private ReservationWithUserDto? CreateReservationDto(Reservation reservation)
+    private ReservationWithUserDto CreateReservationDto(Reservation reservation)
     {
-        var isAdmin = userContext.GetCurrentUser().Roles.Contains(UserRole.Administrator.ToString(), StringComparer.Ordinal);
+        var isAdmin = userContext.GetCurrentUser().Roles.Contains(nameof(UserRole.Administrator), StringComparer.Ordinal);
 
         UserReservesDto? userDto = null;
         if (!isAdmin)
@@ -47,7 +52,7 @@ public class GetDeskHandler(IUserContext userContext, IDeskRepository deskReposi
                 reservation.Status,
                 userDto);
 
-        var name = string.Join(" ", new[] { reservation.User.FirstName, reservation.User.LastName }
+        var name = string.Join(' ', new[] { reservation.User.FirstName, reservation.User.LastName }
             .Where(value => !string.IsNullOrWhiteSpace(value)));
         userDto = new UserReservesDto(reservation.UserId, string.IsNullOrWhiteSpace(name) ? null : name);
 

@@ -20,7 +20,9 @@ public class GetDeskHandlerTests
         _deskRepositoryMock = new Mock<IDeskRepository>();
         _userContextMock = new Mock<IUserContext>();
 
-        _handler = new GetDeskHandler(_userContextMock.Object, _deskRepositoryMock.Object);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.SetupGet(x => x.UtcNow).Returns(new DateTime(2026, 10, 15, 0, 0, 0, DateTimeKind.Utc));
+        _handler = new GetDeskHandler(_userContextMock.Object, _deskRepositoryMock.Object, clock.Object);
     }
 
     private void SetupUserRole(bool isAdmin)
@@ -115,5 +117,70 @@ public class GetDeskHandlerTests
         {
             Assert.Null(result.Reservation.User);
         }
+    }
+    [Theory]
+    [InlineData(-2, 0, Status.Reserved, true)]
+    [InlineData(0, 0, Status.Reserved, true)]
+    [InlineData(1, 2, Status.Reserved, true)]
+    [InlineData(-2, -1, Status.Reserved, false)]
+    [InlineData(0, 1, Status.Canceled, false)]
+    [InlineData(0, 1, Status.Completed, false)]
+    public async Task Handle_WithReservationDatesAndStatus_SelectsOnlyCurrentOrUpcomingReservedBooking(
+        int startOffset, int endOffset, Status status, bool expected)
+    {
+        // Arrange
+        SetupUserRole(true);
+        var today = new DateOnly(2026, 10, 15);
+        var desk = new Desk { Id = Guid.NewGuid(), LocationId = Guid.NewGuid() };
+        var reservation = new Reservation
+        {
+            Id = Guid.NewGuid(),
+            StartDate = today.AddDays(startOffset),
+            EndDate = today.AddDays(endOffset),
+            Status = status,
+            User = new User()
+        };
+        desk.Reservations.Add(reservation);
+        _deskRepositoryMock.Setup(x => x.GetById(desk.Id, It.IsAny<CancellationToken>())).ReturnsAsync(desk);
+
+        // Act
+        var result = await _handler.Handle(new GetDeskDetailsQuery(desk.Id, desk.LocationId), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(expected ? reservation.Id : (Guid?)null, result.Reservation?.Id);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public async Task Handle_WithUnorderedReservations_ReturnsEarliestUnexpiredBooking(int startOffset)
+    {
+        // Arrange
+        SetupUserRole(true);
+        var today = new DateOnly(2026, 10, 15);
+        var desk = new Desk { Id = Guid.NewGuid(), LocationId = Guid.NewGuid() };
+        var later = new Reservation
+        {
+            Id = Guid.NewGuid(),
+            StartDate = today.AddDays(3),
+            EndDate = today.AddDays(3),
+            User = new User()
+        };
+        var earlier = new Reservation
+        {
+            Id = Guid.NewGuid(),
+            StartDate = today.AddDays(startOffset),
+            EndDate = today.AddDays(1),
+            User = new User()
+        };
+        desk.Reservations.Add(later);
+        desk.Reservations.Add(earlier);
+        _deskRepositoryMock.Setup(x => x.GetById(desk.Id, It.IsAny<CancellationToken>())).ReturnsAsync(desk);
+
+        // Act
+        var result = await _handler.Handle(new GetDeskDetailsQuery(desk.Id, desk.LocationId), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(earlier.Id, result.Reservation?.Id);
     }
 }
