@@ -20,11 +20,11 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 | Workflow | Current implementation |
 | --- | --- |
 | Access an account | Employee registration and login; JWT authentication; administrator/employee roles |
-| Manage offices | Administrators create and delete locations; location browsing and editing endpoints are absent |
+| Manage offices | Authenticated users browse locations; administrators create, edit, and delete them |
 | Manage desks | Administrators create/delete desks and change availability; authenticated users list/filter desks by location and retrieve details |
 | Reserve a desk | Authenticated users book an enabled desk for a date range; an application-level overlap check exists |
 | Change a reservation | Owners can change the desk; target availability/overlap checks still need completion |
-| Inspect reservations | Desk details expose reservation information with employee identity restricted to administrators; owners and administrators can cancel reservations; dedicated listing/get endpoints are absent |
+| Inspect reservations | Users list their own reservation history with desk and office details; desk details restrict employee identity to administrators; owners and administrators can cancel reservations; dedicated reservation retrieval and company-wide listing are absent |
 
 ## Agreed booking rules
 
@@ -53,6 +53,10 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 - Database upgrades preserve records and migration history; local startup instructions are reproducible.
 - HTTP responses and authorization behavior are consistent with the agreed workflows.
 
-Keep the four-layer architecture during the refresh. Frontend development, hourly/recurring bookings, multi-company tenancy, notifications, reporting, production deployment, and new endpoints are deferred.
+Keep the four-layer architecture. The React frontend and supporting read endpoints are approved follow-up work; hourly/recurring bookings, multi-company tenancy, notifications, reporting, production deployment, and additional endpoints remain deferred.
 
 See [tech-stack.md](tech-stack.md) for implementation choices and [roadmap.md](roadmap.md) for delivery order.
+
+## Approved React frontend follow-up
+
+The React frontend and minimal authenticated office/personal-reservation read APIs are now approved as separate scope.

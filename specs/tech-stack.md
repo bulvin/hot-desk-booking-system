@@ -1,4 +1,4 @@
-﻿# Tech stack
+# Tech stack
 
 See [mission.md](mission.md) for the product scope and [roadmap.md](roadmap.md) for planned work.
 
@@ -28,3 +28,8 @@ The application has four parts, each with a separate responsibility:
 - **Application:** coordinates actions such as booking a desk and checks incoming requests.
 - **Infrastructure:** handles database access, login support, and other external services.
 - **Web.Api:** receives requests from other applications and returns results or clear errors.
+
+
+## Frontend
+
+The standalone React/TypeScript application uses Vite, React Router, TanStack Query, Keycloak PKCE, and Tailwind CSS with daisyUI. See [frontend.md](frontend.md) for configuration and dependency decisions.

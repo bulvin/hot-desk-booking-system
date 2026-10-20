@@ -68,4 +68,8 @@
 
 ## After the refresh
 
-Plan new endpoints separately: location browsing and reservation listing/retrieval. Frontend, multi-company tenancy, hourly/recurring bookings, notifications, reporting, and production deployment require separate scope decisions.
+The React frontend, location browsing, and personal reservation listing are approved follow-up work (see below). Reservation retrieval, company-wide listing, multi-company tenancy, hourly/recurring bookings, notifications, reporting, and production deployment require separate scope decisions.
+
+## Approved React frontend follow-up
+
+The React frontend and minimal authenticated office/personal-reservation read APIs are now approved as separate scope. See [frontend.md](frontend.md) for workflows, local setup, and boundaries. Production deployment and company-wide reservation browsing remain deferred.
