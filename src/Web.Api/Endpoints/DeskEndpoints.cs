@@ -19,6 +19,7 @@ internal static class DeskEndpoints
             .WithTags("Desks")
             .RequireAuthorization()
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 

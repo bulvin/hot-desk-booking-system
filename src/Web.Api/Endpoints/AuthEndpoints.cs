@@ -10,6 +10,7 @@ internal static class AuthEndpoints
     {
         endpoints.MapGet("/api/profile", GetProfile).RequireAuthorization().WithTags("Account")
             .WithSummary("Returns the current profile")
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }

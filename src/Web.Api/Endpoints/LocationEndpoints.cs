@@ -20,6 +20,7 @@ internal static class LocationEndpoints
             TypedResults.Ok(await sender.Send(new GetLocationsQuery(new PageRequest(page, pageSize)), cancellationToken)))
             .RequireAuthorization().WithTags("Locations").WithSummary("Browse office locations")
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -27,6 +28,7 @@ internal static class LocationEndpoints
             .WithTags("Locations")
             .RequireAuthorization(PolicyNames.Admin)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);

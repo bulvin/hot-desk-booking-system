@@ -171,8 +171,10 @@ public sealed class EndpointTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(operation.Responses);
-        Assert.Equal(expectedCodes.Split(',').Order(StringComparer.Ordinal),
+        Assert.Equal((expectedCodes + ",429").Split(',').Order(StringComparer.Ordinal),
             operation.Responses.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.NotNull(operation.Responses["429"].Headers);
+        Assert.Contains("Retry-After", operation.Responses["429"].Headers!.Keys, StringComparer.Ordinal);
 
         foreach (var (status, response) in operation.Responses)
         {

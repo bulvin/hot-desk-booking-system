@@ -25,6 +25,7 @@ try
 
     builder.Services.AddHostedService<DatabaseInitializationHostedService>();
 
+    builder.Services.AddApiRateLimiting(builder.Configuration);
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
     builder.Services.ConfigureHttpJsonOptions(options =>
@@ -45,7 +46,9 @@ try
     app.UseRequestLogging();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
+    app.UseApiIpRateLimiting();
     app.UseAuthentication();
+    app.UseRateLimiter();
     app.UseAuthorization();
 
     if (app.Environment.IsDevelopment())

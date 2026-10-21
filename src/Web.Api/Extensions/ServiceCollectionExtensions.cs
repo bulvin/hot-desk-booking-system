@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Infrastructure.Data.Converters;
 using Microsoft.OpenApi;
+using Web.Api.Infrastructure;
 
 namespace Web.Api.Extensions;
 
@@ -52,6 +53,7 @@ internal static class ServiceCollectionExtensions
                         ["openid", "profile", "email"]
                     }
                 });
+                o.OperationFilter<RateLimitOperationFilter>();
                 o.EnableAnnotations();
             });
 

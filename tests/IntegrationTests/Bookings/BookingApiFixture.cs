@@ -159,6 +159,9 @@ public sealed class BookingApiFixture : IAsyncLifetime
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
+            builder.UseSetting("RateLimiting:IpPermitLimit", "100000");
+            builder.UseSetting("RateLimiting:UserPermitLimit", "100000");
+            builder.UseSetting("RateLimiting:WritePermitLimit", "100000");
             builder.UseSetting("ConnectionStrings:Database", connectionString);
             builder.UseSetting("Database:SeedSampleData", "false");
             builder.UseSetting("Keycloak:Authority", authority);

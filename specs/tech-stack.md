@@ -33,3 +33,14 @@ The application has four parts, each with a separate responsibility:
 ## Frontend
 
 The standalone React/TypeScript application uses Vite, React Router, TanStack Query, Keycloak PKCE, and Tailwind CSS with daisyUI. See [frontend.md](frontend.md) for configuration and dependency decisions.
+
+## API rate limiting
+
+The API uses the .NET shared framework's in-memory fixed-window rate limiters; no additional package or service is required. Limits apply to `/api` and every subpath, including unknown routes. Swagger is excluded.
+
+| Configuration key | Default | Meaning |
+| --- | --- | --- |
+| RateLimiting:IpPermitLimit | 1200 | Requests per connection IP before authentication |
+| RateLimiting:UserPermitLimit | 120 | Total requests per verified Keycloak user across all API routes |
+| RateLimiting:WritePermitLimit | 20 | POST, PUT, PATCH and DELETE requests per user across all API routes |
+| RateLimiting:WindowSeconds | 60 | Fixed-window duration in seconds |

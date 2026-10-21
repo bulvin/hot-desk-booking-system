@@ -40,23 +40,26 @@ internal sealed class EndpointTestHost : IAsyncLifetime
             .AddPolicy(PolicyNames.Admin, policy => policy.RequireClaim(ClaimTypes.Role, PolicyNames.Admin));
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsConfiguration.Customize);
+        builder.Services.AddApiRateLimiting(builder.Configuration);
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
 
         _app = builder.Build();
         _app.UseExceptionHandler();
         _app.UseStatusCodePages();
+        _app.UseApiIpRateLimiting();
         _app.UseAuthentication();
         _app.Use(async (context, next) =>
         {
             if (context.Request.Headers.TryGetValue("Test-Role", out var role))
             {
                 context.User = new ClaimsPrincipal(new ClaimsIdentity(
-                    [new Claim(ClaimTypes.Role, role.ToString())], "Test"));
+                    [new Claim(ClaimTypes.Role, role.ToString()), new Claim(ClaimTypes.NameIdentifier, "endpoint-test-user")], "Test"));
             }
 
             await next(context);
         });
+        _app.UseRateLimiter();
         _app.UseAuthorization();
 
         _app.MapAuthEndpoints();
