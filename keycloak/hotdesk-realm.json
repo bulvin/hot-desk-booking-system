@@ -73,7 +73,7 @@
         }
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://localhost:8080/swagger/",
+          "post.logout.redirect.uris": "http://localhost:8080/swagger/##https://localhost:8081/swagger/",
         "pkce.code.challenge.method": "S256"
       },
       "defaultClientScopes": [
@@ -84,10 +84,12 @@
         "email"
       ],
       "webOrigins": [
-        "http://localhost:8080"
+          "http://localhost:8080",
+          "https://localhost:8081"
       ],
       "redirectUris": [
-        "http://localhost:8080/swagger/oauth2-redirect.html"
+          "http://localhost:8080/swagger/oauth2-redirect.html",
+          "https://localhost:8081/swagger/oauth2-redirect.html"
       ],
       "implicitFlowEnabled": false,
       "standardFlowEnabled": true,

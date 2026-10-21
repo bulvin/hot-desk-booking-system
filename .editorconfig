@@ -23,6 +23,9 @@ indent_size = 2
 [frontend/**]
 end_of_line = lf
 
+[*.sh]
+end_of_line = lf
+
 # C# diagnostics and style. Directory.Build.props enables analyzers and warnings as errors.
 [*.cs]
 # Nullable safety: reject possible null conversion, assignment, dereference, return and arguments.

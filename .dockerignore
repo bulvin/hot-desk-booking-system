@@ -27,6 +27,9 @@ README.md
 **/.secrets
 **/.containers
 **/.https
+**/*.pfx
+**/*.p12
+**/*.key
 
 # The API image does not consume the standalone frontend.
 /frontend
