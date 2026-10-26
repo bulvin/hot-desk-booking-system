@@ -18,6 +18,8 @@ import type {
     Page,
 } from '../../shared/api/types';
 
+let rememberedOffice = '';
+
 export function DeskSearch({
     changing,
     onChanged,
@@ -26,7 +28,7 @@ export function DeskSearch({
     onChanged?: () => void;
 }) {
     const today = useToday();
-    const [office, setOffice] = useState('');
+    const [office, setOffice] = useState(rememberedOffice);
     const [start, setStart] = useState(today);
     const [end, setEnd] = useState(today);
     const [bookable, setBookable] = useState(true);
@@ -110,6 +112,7 @@ export function DeskSearch({
                     <OfficeSelect
                         value={office}
                         onChange={(value) => {
+                            rememberedOffice = value;
                             setOffice(value);
                             setPage(1);
                             setDetailsId('');
