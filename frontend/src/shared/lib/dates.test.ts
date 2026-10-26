@@ -25,15 +25,17 @@ describe('UTC booking rules', () => {
     ])('rejects invalid range %s to %s', (start, end) => {
         expect(bookingError(start, end, '2026-10-19')).not.toBeNull();
     });
-    it('closes owner actions at UTC midnight but allows admin cancellation through the end', () => {
+    it('allows owner actions through the start day and admin cancellation through the end', () => {
         const r = {
             status: 'Reserved',
             startDate: '2026-10-20',
             endDate: '2026-10-22',
         };
         expect(canChange(r, '2026-10-19')).toBe(true);
-        expect(canChange(r, '2026-10-20')).toBe(false);
-        expect(canCancel(r, false, '2026-10-20')).toBe(false);
+        expect(canChange(r, '2026-10-20')).toBe(true);
+        expect(canChange(r, '2026-10-21')).toBe(false);
+        expect(canCancel(r, false, '2026-10-20')).toBe(true);
+        expect(canCancel(r, false, '2026-10-21')).toBe(false);
         expect(canCancel(r, true, '2026-10-22')).toBe(true);
         expect(canCancel(r, true, '2026-10-23')).toBe(false);
     });

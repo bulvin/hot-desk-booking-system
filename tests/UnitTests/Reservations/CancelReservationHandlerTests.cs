@@ -11,18 +11,33 @@ namespace UnitTests.Reservations;
 public class CancelReservationHandlerTests
 {
     [Theory]
-    [InlineData(false, 14, 23, 59, 59, Status.Reserved, true)]
-    [InlineData(false, 15, 0, 0, 0, Status.Reserved, true)]
-    [InlineData(false, 15, 23, 59, 59, Status.Reserved, true)]
-    [InlineData(false, 16, 0, 0, 0, Status.Reserved, false)]
-    [InlineData(true, 16, 0, 0, 0, Status.Reserved, true)]
-    [InlineData(true, 18, 23, 59, 59, Status.Reserved, true)]
-    [InlineData(true, 19, 0, 0, 0, Status.Reserved, false)]
-    [InlineData(true, 14, 0, 0, 0, Status.Completed, false)]
-    [InlineData(false, 14, 0, 0, 0, Status.Completed, false)]
-    [InlineData(false, 20, 0, 0, 0, Status.Canceled, true)]
-    [InlineData(true, 20, 0, 0, 0, Status.Canceled, true)]
-    public async Task Handle_EnforcesUtcWindowAndState(bool admin, int day, int hour, int minute, int second, Status status, bool allowed)
+    [InlineData(false, 14, 23, 59, 59, Status.Reserved, true, 16)]
+    [InlineData(false, 14, 23, 59, 59, Status.Reserved, true, 18)]
+    [InlineData(false, 15, 0, 0, 0, Status.Reserved, true, 16)]
+    [InlineData(false, 15, 0, 0, 0, Status.Reserved, true, 18)]
+    [InlineData(false, 15, 23, 59, 59, Status.Reserved, true, 16)]
+    [InlineData(false, 15, 23, 59, 59, Status.Reserved, true, 18)]
+    [InlineData(false, 16, 0, 0, 0, Status.Reserved, true, 16)]
+    [InlineData(false, 16, 0, 0, 0, Status.Reserved, true, 18)]
+    [InlineData(false, 16, 23, 59, 59, Status.Reserved, true, 16)]
+    [InlineData(false, 16, 23, 59, 59, Status.Reserved, true, 18)]
+    [InlineData(false, 17, 0, 0, 0, Status.Reserved, false, 16)]
+    [InlineData(false, 17, 0, 0, 0, Status.Reserved, false, 18)]
+    [InlineData(true, 16, 0, 0, 0, Status.Reserved, true, 16)]
+    [InlineData(true, 16, 0, 0, 0, Status.Reserved, true, 18)]
+    [InlineData(true, 18, 23, 59, 59, Status.Reserved, false, 16)]
+    [InlineData(true, 18, 23, 59, 59, Status.Reserved, true, 18)]
+    [InlineData(true, 19, 0, 0, 0, Status.Reserved, false, 16)]
+    [InlineData(true, 19, 0, 0, 0, Status.Reserved, false, 18)]
+    [InlineData(true, 14, 0, 0, 0, Status.Completed, false, 16)]
+    [InlineData(true, 14, 0, 0, 0, Status.Completed, false, 18)]
+    [InlineData(false, 14, 0, 0, 0, Status.Completed, false, 16)]
+    [InlineData(false, 14, 0, 0, 0, Status.Completed, false, 18)]
+    [InlineData(false, 20, 0, 0, 0, Status.Canceled, true, 16)]
+    [InlineData(false, 20, 0, 0, 0, Status.Canceled, true, 18)]
+    [InlineData(true, 20, 0, 0, 0, Status.Canceled, true, 16)]
+    [InlineData(true, 20, 0, 0, 0, Status.Canceled, true, 18)]
+    public async Task Handle_EnforcesUtcWindowAndState(bool admin, int day, int hour, int minute, int second, Status status, bool allowed, int endDay)
     {
         var ownerId = Guid.NewGuid();
         var reservation = new Reservation
@@ -30,7 +45,7 @@ public class CancelReservationHandlerTests
             Id = Guid.NewGuid(),
             UserId = ownerId,
             StartDate = new DateOnly(2026, 10, 16),
-            EndDate = new DateOnly(2026, 10, 18),
+            EndDate = new DateOnly(2026, 10, endDay),
             Status = status
         };
         var repository = new Mock<IReservationRepository>(MockBehavior.Strict);

@@ -27,7 +27,7 @@ public class CancelReservationHandler(
             return Unit.Value;
 
         var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
-        var withinWindow = isAdmin ? today <= reservation.EndDate : today < reservation.StartDate;
+        var withinWindow = isAdmin ? today <= reservation.EndDate : today <= reservation.StartDate;
         if (reservation.Status != Status.Reserved || !withinWindow)
             throw new ReservationConflictException(command.Id);
 

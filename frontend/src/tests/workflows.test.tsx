@@ -161,15 +161,28 @@ it('cancels personal reservations only after confirmation', async () => {
         ),
     );
 });
-it('offers desk changes for upcoming reservations', async () => {
-    mount(<Reservations admin={false} />);
-    await userEvent.click(
-        await screen.findByRole('button', { name: 'Change desk' }),
-    );
-    expect(
-        screen.getByRole('heading', { name: 'Change your desk' }),
-    ).toBeInTheDocument();
-});
+it.each([0, 1])(
+    'offers owner actions for reservations starting in %s days',
+    async (offset) => {
+        request.mockResolvedValueOnce(
+            paged([{ ...reservation, startDate: addDays(utcToday(), offset) }]),
+        );
+        mount(<Reservations admin={false} />);
+
+        const change = await screen.findByRole('button', {
+            name: 'Change desk',
+        });
+
+        expect(change).toBeEnabled();
+        expect(
+            screen.getByRole('button', { name: 'Cancel booking' }),
+        ).toBeEnabled();
+        await userEvent.click(change);
+        expect(
+            screen.getByRole('heading', { name: 'Change your desk' }),
+        ).toBeInTheDocument();
+    },
+);
 it('shows a loading state and a retryable network error', async () => {
     let reject: (error: Error) => void = () => {};
     request.mockImplementation(

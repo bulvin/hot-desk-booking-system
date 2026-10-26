@@ -19,11 +19,11 @@ export function bookingError(
 export const canChange = (
     r: { status: string; startDate: string },
     today = utcToday(),
-) => r.status === 'Reserved' && r.startDate > today;
+) => r.status === 'Reserved' && r.startDate >= today;
 export const canCancel = (
     r: { status: string; startDate: string; endDate: string },
     admin: boolean,
     today = utcToday(),
 ) =>
     r.status === 'Reserved' &&
-    (admin ? r.endDate >= today : r.startDate > today);
+    (admin ? r.endDate >= today : r.startDate >= today);

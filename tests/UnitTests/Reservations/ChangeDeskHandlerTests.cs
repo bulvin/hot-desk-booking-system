@@ -12,10 +12,15 @@ namespace UnitTests.Reservations;
 public class ChangeDeskHandlerTests
 {
     [Theory]
-    [InlineData(15, 23, 59, 59, true)]
-    [InlineData(16, 0, 0, 0, false)]
-    [InlineData(17, 0, 0, 0, false)]
-    public async Task Handle_EnforcesUtcStartDayCutoff(int day, int hour, int minute, int second, bool allowed)
+    [InlineData(15, 23, 59, 59, true, 16)]
+    [InlineData(15, 23, 59, 59, true, 18)]
+    [InlineData(16, 0, 0, 0, true, 16)]
+    [InlineData(16, 0, 0, 0, true, 18)]
+    [InlineData(16, 23, 59, 59, true, 16)]
+    [InlineData(16, 23, 59, 59, true, 18)]
+    [InlineData(17, 0, 0, 0, false, 16)]
+    [InlineData(17, 0, 0, 0, false, 18)]
+    public async Task Handle_EnforcesUtcStartDayCutoff(int day, int hour, int minute, int second, bool allowed, int endDay)
     {
         var clock = new Mock<IDateTimeProvider>(MockBehavior.Strict);
         clock.SetupGet(provider => provider.UtcNow).Returns(new DateTime(2026, 10, day, hour, minute, second, DateTimeKind.Utc));
@@ -27,7 +32,7 @@ public class ChangeDeskHandlerTests
             DeskId = originalDeskId,
             UserId = userId,
             StartDate = new DateOnly(2026, 10, 16),
-            EndDate = new DateOnly(2026, 10, 16)
+            EndDate = new DateOnly(2026, 10, endDay)
         };
         var command = new ChangeDeskCommand(reservation.Id, Guid.NewGuid());
         var reservations = new Mock<IReservationRepository>(MockBehavior.Strict);

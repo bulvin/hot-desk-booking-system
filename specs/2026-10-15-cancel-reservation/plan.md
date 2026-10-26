@@ -7,7 +7,7 @@ Phase 11 adds owner and administrator cancellation. Reservations already have a 
 ## GOAL
 
 - Add `PUT /api/reservations/{id:guid}/cancel` with no body; return `204` on success, `401` without authentication, `403` for another employee's reservation, `404` if missing, and `409` for a prohibited state or cutoff.
-- Owners must cancel before the start day begins at midnight UTC. For a Friday booking, cancellation is allowed throughout Thursday and closes at 00:00 UTC on Friday.
+- Owners may cancel through the start day in UTC. For a Friday booking, cancellation is allowed throughout Friday and closes at 00:00 UTC on Saturday.
 - Administrators may cancel reserved bookings through their final UTC day. Completed bookings cannot be canceled.
 - Set status to `Canceled`, retain history, and free the entire date range. An authorized repeat returns `204` without writes, even after the cutoff. Canceled reservations cannot be modified through desk changes, including stale concurrent requests.
 - Block deletion of desks with any reservation history with `409`.

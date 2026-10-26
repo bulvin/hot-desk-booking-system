@@ -36,7 +36,7 @@ public class ChangeDeskHandler(
         if (!await deskRepository.Exists(command.DeskId, cancellationToken))
             throw new DeskNotFoundException(command.DeskId);
 
-        if (reservation.StartDate <= today)
+        if (reservation.StartDate < today)
         {
             throw new TooLateForReservationChangeException(command.Id, reservation.StartDate);
         }

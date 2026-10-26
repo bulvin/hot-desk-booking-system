@@ -38,13 +38,13 @@ internal static class ReservationEndpoints
 
         group.MapPut("/{id:guid}/cancel", Cancel)
             .WithSummary("Cancel reservation")
-            .WithDescription("Owners must cancel before the start day begins at midnight UTC. Administrators may cancel through the final UTC day. Completed reservations cannot be canceled. Cancellation retains history and frees the entire date range. Authorized repeats succeed without changes.")
+            .WithDescription("Owners may cancel through the start day; the cutoff is midnight UTC starting the following day. Administrators may cancel through the final UTC day. Completed reservations cannot be canceled. Cancellation retains history and frees the entire date range. Authorized repeats succeed without changes.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}/change-desk", ChangeDesk)
             .WithSummary("Change reserved desk")
-            .WithDescription("Only reserved bookings can change desks, before the reservation start day measured at midnight UTC for every location.")
+            .WithDescription("Only reserved bookings can change desks, through the reservation start day; the cutoff is midnight UTC starting the following day for every location.")
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status403Forbidden);
     }

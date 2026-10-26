@@ -33,8 +33,8 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 - Start dates cannot be in the past and may be at most seven days ahead. The end date can extend beyond that horizon within the seven-day duration limit.
 - A desk must be enabled and free of overlapping active reservations for every requested day.
 - Changing a desk must enforce ownership and the same availability rules as a new booking.
-- Owners may change desks only before the reservation start day in UTC. The same cutoff applies when changing to a desk in another location.
-- Owners may cancel only before the reservation start day begins at midnight UTC. For a Friday booking, cancellation is allowed throughout Thursday and closes at 00:00 UTC on Friday.
+- Owners may change desks through the reservation start day in UTC; changes close at midnight starting the following day. The same cutoff applies when changing to a desk in another location.
+- Owners may cancel through the reservation start day in UTC. For a Friday booking, cancellation is allowed throughout Friday and closes at 00:00 UTC on Saturday.
 - Administrators may cancel reserved bookings through their final UTC day. Completed bookings cannot be canceled.
 - Cancellation retains the reservation as `Canceled` and frees its entire date range. Authorized repeats succeed without further writes, including after the cutoff. Canceled and completed reservations cannot change desks.
 - Desks with any reservation history cannot be deleted; deletion returns a conflict. Completed and canceled reservations do not block booking availability.

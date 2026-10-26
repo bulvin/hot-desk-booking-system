@@ -60,10 +60,10 @@ export function Reservations({ admin }: { admin: boolean }) {
                 Your upcoming office days and booking history.
             </p>
             <p className="text-sm mb-5">
-                Change desks before the start day.{' '}
+                Change desks through the start day.{' '}
                 {admin
                     ? 'As an administrator, you may cancel through the final booking day.'
-                    : 'Cancel before the start day.'}{' '}
+                    : 'Cancel through the start day.'}{' '}
                 Cutoffs use midnight UTC.
             </p>
             {reservations.isPending && <Loading />}
