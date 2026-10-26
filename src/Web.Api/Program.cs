@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Data.Converters;
+using Infrastructure.Health;
 using Serilog;
 using Web.Api.Endpoints;
 using Web.Api.Extensions;
@@ -23,7 +24,8 @@ try
         .AddApplication()
         .AddInfrastructure(builder.Configuration);
 
-    builder.Services.AddProductionHosting(builder.Configuration, builder.Environment);
+    builder.Services.AddHostedService<DatabaseInitializationHostedService>();
+    builder.Services.AddDependencyHealthChecks();
 
     builder.Services.AddApiRateLimiting(builder.Configuration);
     builder.Services.AddEndpointsApiExplorer();
@@ -43,7 +45,6 @@ try
 
     var app = builder.Build();
 
-    app.UseForwardedHeaders();
     app.UseRequestLogging();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
