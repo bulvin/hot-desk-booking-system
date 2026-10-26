@@ -23,7 +23,7 @@ try
         .AddApplication()
         .AddInfrastructure(builder.Configuration);
 
-    builder.Services.AddHostedService<DatabaseInitializationHostedService>();
+    builder.Services.AddProductionHosting(builder.Configuration, builder.Environment);
 
     builder.Services.AddApiRateLimiting(builder.Configuration);
     builder.Services.AddEndpointsApiExplorer();
@@ -43,9 +43,11 @@ try
 
     var app = builder.Build();
 
+    app.UseForwardedHeaders();
     app.UseRequestLogging();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
+    app.UsePrivateHealthChecks();
     app.UseApiIpRateLimiting();
     app.UseAuthentication();
     app.UseRateLimiter();
