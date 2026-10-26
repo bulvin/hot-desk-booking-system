@@ -40,8 +40,9 @@ internal sealed class KeycloakTokenValidationEvents(HttpClient client, IOptions<
             ["token"] = token,
             ["token_type_hint"] = "access_token"
         });
-        using var response = await client.PostAsync(
-            $"{options.Value.ServerAuthority}/protocol/openid-connect/token/introspect", body, context.HttpContext.RequestAborted);
+        using var response = await Introspect(context, body);
+        if (response is null)
+            return;
         if (!response.IsSuccessStatusCode)
         {
             context.Fail("Token introspection failed.");
@@ -69,6 +70,25 @@ internal sealed class KeycloakTokenValidationEvents(HttpClient client, IOptions<
         }
         identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId.ToString()));
         await SynchronizeUser(principal, userId, context.HttpContext.RequestAborted);
+    }
+
+    private async Task<HttpResponseMessage?> Introspect(TokenValidatedContext context, HttpContent body)
+    {
+        try
+        {
+            return await client.PostAsync(
+                $"{options.Value.ServerAuthority}/protocol/openid-connect/token/introspect", body, context.HttpContext.RequestAborted);
+        }
+        catch (OperationCanceledException) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            context.Fail("Token introspection unavailable.");
+            return null;
+        }
+        catch (HttpRequestException)
+        {
+            context.Fail("Token introspection unavailable.");
+            return null;
+        }
     }
 
     private Task SynchronizeUser(ClaimsPrincipal principal, Guid userId, CancellationToken cancellationToken) =>

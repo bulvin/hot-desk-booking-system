@@ -34,11 +34,13 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddHttpContextAccessor();
             services.AddScoped<IUserContext, UserContext>();
             services.AddScoped<BookingUserSynchronizer>();
-            services.AddHttpClient<KeycloakTokenValidationEvents>();
+            services.AddHttpClient<KeycloakTokenValidationEvents>((provider, client) =>
+                client.Timeout = TimeSpan.FromSeconds(provider.GetRequiredService<IOptions<KeycloakOptions>>().Value.IntrospectionTimeoutSeconds));
 
             services.AddDatabase(configuration);
 
             services.AddOptions<KeycloakOptions>().Bind(configuration.GetSection("Keycloak"))
+                .Validate(options => options.IntrospectionTimeoutSeconds > 0, "Keycloak:IntrospectionTimeoutSeconds must be positive.")
                 .Validate(options => Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri)
                     && uri.Scheme is "http" or "https", "Keycloak:Authority must be an absolute HTTP(S) realm URL.")
                 .Validate(options => options.BackchannelAuthority is null

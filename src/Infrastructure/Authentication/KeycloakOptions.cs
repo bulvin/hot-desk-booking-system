@@ -8,6 +8,7 @@ public sealed class KeycloakOptions
     public string ClientSecret { get; set; } = string.Empty;
     public string SwaggerClientId { get; set; } = "hotdesk-swagger";
     public bool RequireHttpsMetadata { get; set; } = true;
+    public int IntrospectionTimeoutSeconds { get; set; } = 10;
 
     public string ServerAuthority => (BackchannelAuthority ?? Authority).TrimEnd('/');
 }
