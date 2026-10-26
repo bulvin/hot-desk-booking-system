@@ -1,4 +1,5 @@
 using System.Net;
+using Domain.Locations;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
 using Web.Api.Extensions;
+using Web.Api.Infrastructure;
 
 namespace IntegrationTests.Endpoints;
 
@@ -103,6 +105,8 @@ public sealed class ProductionHostingTests
             ["RateLimiting:IpPermitLimit"] = "1"
         });
         builder.Services.AddProductionHosting(builder.Configuration, builder.Environment);
+        // This isolated host exercises proxy middleware; the full application tests cover database startup.
+        builder.Services.Remove(builder.Services.Single(service => service.ImplementationType == typeof(DatabaseInitializationHostedService)));
         builder.Services.AddApiRateLimiting(builder.Configuration);
         builder.Services.AddProblemDetails();
         await using var app = builder.Build();
@@ -133,7 +137,7 @@ public sealed class ProductionHostingTests
     }
 
     [Fact]
-    public async Task Production_ProbesTrackDependenciesWithoutApplyingMigrationsOrExposingSwagger()
+    public async Task Production_StartupAppliesMigrationsAndProbesTrackDependenciesWithoutExposingSwagger()
     {
         // Arrange
         await using var postgres = new PostgreSqlBuilder("postgres:18").Build();
@@ -147,9 +151,10 @@ public sealed class ProductionHostingTests
 
         // Act
         using var live = await client.GetAsync("/health/live", TestContext.Current.CancellationToken);
-        using var pending = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
         var applied = await database.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken);
-        await database.Database.MigrateAsync(TestContext.Current.CancellationToken);
+        var pending = await database.Database.GetPendingMigrationsAsync(TestContext.Current.CancellationToken);
+        var locations = await database.Locations.CountAsync(TestContext.Current.CancellationToken);
+        var desks = await database.Desks.CountAsync(TestContext.Current.CancellationToken);
         using var ready = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
         factory.IdentityAvailable = false;
         using var identityDown = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
@@ -162,10 +167,11 @@ public sealed class ProductionHostingTests
         using var stillLive = await client.GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Empty(applied);
+        Assert.NotEmpty(applied);
+        Assert.Empty(pending);
+        Assert.Equal(0, locations);
+        Assert.Equal(0, desks);
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, pending.StatusCode);
-        Assert.Equal("Unhealthy", await pending.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, identityDown.StatusCode);
         Assert.Equal(HttpStatusCode.OK, recovered.StatusCode);
@@ -173,6 +179,45 @@ public sealed class ProductionHostingTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, databaseDown.StatusCode);
         Assert.Equal("Unhealthy", await databaseDown.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal(HttpStatusCode.OK, stillLive.StatusCode);
+    }
+
+    [Fact]
+    public async Task Production_RestartPreservesDataAndMigrationHistory()
+    {
+        // Arrange
+        await using var postgres = new PostgreSqlBuilder("postgres:18").Build();
+        await postgres.StartAsync(TestContext.Current.CancellationToken);
+        var configuration = ValidConfiguration();
+        configuration["ConnectionStrings:Database"] = postgres.GetConnectionString();
+        await using var database = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(postgres.GetConnectionString()).Options);
+        var location = new Location
+        {
+            Id = Guid.NewGuid(),
+            Name = "Existing office",
+            Address = new Address("Office Street", "1", "Warsaw", "00-001")
+        };
+
+        // Act
+        await using (var first = new ProductionApplication(configuration))
+        {
+            using var client = first.CreateClient();
+            database.Locations.Add(location);
+            await database.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        var initialHistory = (await database.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken)).ToArray();
+        await using var restarted = new ProductionApplication(configuration);
+        using var restartedClient = restarted.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://api.example.test") });
+        using var ready = await restartedClient.GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var finalHistory = (await database.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken)).ToArray();
+        var persisted = await database.Locations.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotEmpty(initialHistory);
+        Assert.Equal(initialHistory, finalHistory);
+        Assert.Equal(location.Id, persisted.Id);
+        Assert.Equal(location.Name, persisted.Name);
+        Assert.Equal(location.Address, persisted.Address);
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
     }
 
     private static Dictionary<string, string?> ValidConfiguration() => new(StringComparer.Ordinal)

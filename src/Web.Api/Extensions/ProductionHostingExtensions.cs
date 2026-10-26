@@ -38,8 +38,8 @@ internal static class ProductionHostingExtensions
                 options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
         });
 
-        if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
-            services.AddHostedService<DatabaseInitializationHostedService>();
+
+        services.AddHostedService<DatabaseInitializationHostedService>();
         services.AddDependencyHealthChecks();
     }
 
