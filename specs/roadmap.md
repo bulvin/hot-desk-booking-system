@@ -63,8 +63,8 @@
 
 - [x] Add GitHub Actions CI for pull requests and pushes to the default branch, using the SDK from `global.json` on a Linux runner with Docker.
 - [x] Run restore, Release build with warnings as errors, unit tests, PostgreSQL 18 integration tests through the existing Testcontainers fixture, and formatting verification with the agreed diagnostics and migration exclusion. Publish test results even on failure.
-- [x] Add API Docker build verification and document the required CI status checks.
-- [x] Add a release workflow to run checks on the tagged commit and publish the API image to GitHub Container Registry with version and commit tags; keep publishing credentials out of pull-request workflows.
+- API Docker build verification was removed because production does not use containers; backend and frontend checks remain enabled.
+- Docker image release publishing was removed because production uses Azure App Service without Docker; CI verification remains enabled.
 
 ## After the refresh
 

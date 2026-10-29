@@ -42,17 +42,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  docker:
-    name: Docker build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - name: Build API image
-        run: docker build --file src/Web.Api/Dockerfile --tag hotdesk:ci .
-
   frontend:
     name: Frontend checks
     runs-on: ubuntu-24.04
