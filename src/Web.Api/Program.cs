@@ -27,6 +27,13 @@ try
     builder.Services.AddHostedService<DatabaseInitializationHostedService>();
     builder.Services.AddDependencyHealthChecks();
 
+    builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+    {
+        var origin = builder.Configuration["Authentication:BrowserOrigin"];
+        if (!string.IsNullOrWhiteSpace(origin))
+            policy.WithOrigins(origin).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    }));
+
     builder.Services.AddApiRateLimiting(builder.Configuration);
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGenWithAuth(builder.Configuration);
@@ -48,17 +55,24 @@ try
     app.UseRequestLogging();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
+    app.UseCors();
     app.UsePrivateHealthChecks();
     app.UseApiIpRateLimiting();
     app.UseAuthentication();
     app.UseRateLimiter();
     app.UseAuthorization();
 
-    if (app.Environment.IsDevelopment())
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        options.RoutePrefix = "swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "HotDesk Booking API v1");
+    });
+
+    app.MapGet("/", () => Results.Redirect("/swagger/index.html"))
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
 
     app.MapAuthEndpoints();
     app.MapLocationEndpoints();

@@ -26,7 +26,8 @@ internal static class AuthCookie
         HttpOnly = true,
         Secure = !(context.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment()
             && context.RequestServices.GetRequiredService<IConfiguration>().GetValue<bool>("Authentication:AllowInsecureCookies")),
-        SameSite = SameSiteMode.Strict,
+        SameSite = context.RequestServices.GetRequiredService<IConfiguration>()
+            .GetValue<bool>("Authentication:CrossSiteCookies") ? SameSiteMode.None : SameSiteMode.Strict,
         Path = "/api/auth"
     };
 #pragma warning restore S2092
