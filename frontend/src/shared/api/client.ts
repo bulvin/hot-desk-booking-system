@@ -1,3 +1,4 @@
+import { apiUrl } from './url';
 import { accessToken, expireSession } from '../auth/session';
 export class ApiError extends Error {
     constructor(
@@ -22,7 +23,7 @@ export async function api<T>(
     if (options.body) headers.set('Content-Type', 'application/json');
     const send = () => {
         headers.set('Authorization', `Bearer ${token}`);
-        return fetch(`/api${path}`, { ...options, headers });
+        return fetch(apiUrl(path), { ...options, headers });
     };
     let response = await send();
     if (response.status === 401) {

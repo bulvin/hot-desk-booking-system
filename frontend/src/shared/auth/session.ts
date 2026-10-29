@@ -1,3 +1,4 @@
+import { apiUrl } from '../api/url';
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
@@ -38,9 +39,9 @@ async function accept(
 export async function login(email: string, password: string) {
     const current = ++generation;
     await accept(
-        await fetch('/api/auth/login', {
+        await fetch(apiUrl('/auth/login'), {
             method: 'POST',
-            credentials: 'same-origin',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         }),
@@ -54,9 +55,9 @@ export async function accessToken(force = false): Promise<string> {
         const current = generation;
         // The Web Lock also serializes refreshes from different tabs sharing the cookie.
         const refresh = () =>
-            fetch('/api/auth/refresh', {
+            fetch(apiUrl('/auth/refresh'), {
                 method: 'POST',
-                credentials: 'same-origin',
+                credentials: 'include',
             }).then((response) => accept(response, current));
         refreshing = Promise.resolve(
             navigator.locks
@@ -83,9 +84,9 @@ export async function restoreSession() {
 export async function logout() {
     // Let any in-flight refresh settle before revoking the current cookie.
     await refreshing?.catch(() => undefined);
-    const response = await fetch('/api/auth/logout', {
+    const response = await fetch(apiUrl('/auth/logout'), {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
     });
     if (!response.ok) throw new Error('Sign out failed. Please try again.');
     expireSession();
