@@ -37,7 +37,7 @@
 - [x] Document endpoint error statuses and Problem Details schemas, including authentication, authorization, conflicts, and request-body errors.
 - [x] Normalize empty HTTP errors through the Problem Details service and verify response metadata, RFC type links, and Swagger contracts.
 
-## Phase 8: Keycloak authentication — complete
+## Phase 8: Keycloak authentication - historical (superseded by local Identity)
 
 - [x] Delegate account lifecycle to Keycloak with OAuth 2.0/OpenID Connect and PKCE.
 - [x] Validate and introspect access tokens; preserve booking ownership and role policies.

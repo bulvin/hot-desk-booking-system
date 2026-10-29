@@ -1,4 +1,4 @@
-﻿# HotDeskBooking | ASP.NET Core 10, Entity Framework Core, and PostgreSQL 18. Keycloak manages accounts and authentication through OAuth 2.0/OpenID Connect.
+﻿# HotDeskBooking | ASP.NET Core 10, Entity Framework Core, and PostgreSQL 18. ASP.NET Core Identity manages local accounts; JWTs and rotating refresh sessions provide authentication.
 
 Before making changes, read the [mission](specs/mission.md) for scope and agreed business rules. The [tech stack](specs/tech-stack.md) describes implementation choices, and the [roadmap](specs/roadmap.md) defines delivery order. The current priority is stabilizing the existing API. Specialized instructions are available under `.agents/skills/`.
 
@@ -45,7 +45,7 @@ Use the existing source-generated Mediator and explicit DTO mapping. Place use-c
 - Do not expand routine refresh work to new endpoints, frontend development, multi-company tenancy, hourly or recurring bookings, notifications, reporting, or production deployment. These require separately agreed scope; an explicit user request can change that scope.
 - Do not independently decide the business timezone, desk-change cutoff, multiple same-day employee reservation policy, or how completed/canceled reservations affect availability and desk deletion. Ask for the relevant decision when implementation depends on it.
 - Do not treat an application-level overlap check as protection against concurrency. A database safeguard remains a requirement to implement.
-- Do not replace Keycloak with local password storage or token issuance.
+
 - Do not commit secrets or expose them in logs.
 - Do not delete volumes or data as a PostgreSQL upgrade strategy; preserve records and migration history. Do not rewrite existing migrations during formatting.
 - Do not bypass failures by globally disabling analyzers or warnings.

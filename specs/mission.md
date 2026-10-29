@@ -1,4 +1,4 @@
-﻿# Mission
+# Mission
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 
 | Workflow | Current implementation |
 | --- | --- |
-| Access an account | Employee registration and login; JWT authentication; administrator/employee roles |
+| Access an account | Administrator-created accounts with assigned passwords; local Identity login and JWT sessions; administrator/employee roles |
 | Manage offices | Authenticated users browse locations; administrators create, edit, and delete them |
 | Manage desks | Administrators create/delete desks and change availability; authenticated users list/filter desks by location and retrieve details |
 | Reserve a desk | Authenticated users book an enabled desk for a date range; an application-level overlap check exists |
@@ -60,3 +60,7 @@ See [tech-stack.md](tech-stack.md) for implementation choices and [roadmap.md](r
 ## Approved React frontend follow-up
 
 The React frontend and minimal authenticated office/personal-reservation read APIs are now approved as separate scope.
+
+## Approved local account management
+
+Replace Keycloak end to end with ASP.NET Core Identity and JWT sessions. Administrators create, list, deactivate, and reactivate employees. Administrator provisioning is handled separately; no bootstrap command is provided. Multiple administrator accounts are supported. No public registration, password setup/change/recovery, email confirmation, user deletion, or role editing is included. Preserve historical booking ownership and database migration history; no existing Keycloak account import is required. See the README for configuration and authentication contracts.

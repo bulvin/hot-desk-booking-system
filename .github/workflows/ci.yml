@@ -28,7 +28,7 @@ jobs:
         run: dotnet build hot-desk-booking-system.slnx --configuration Release --no-restore -warnaserror
       - name: Unit tests
         run: dotnet test tests/UnitTests/UnitTests.csproj --configuration Release --no-build --logger "trx;LogFileName=unit.trx" --results-directory TestResults/unit
-      - name: Integration tests (PostgreSQL and Keycloak)
+      - name: Integration tests (PostgreSQL and local Identity)
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: dotnet test tests/IntegrationTests/IntegrationTests.csproj --configuration Release --no-build --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration
       - name: Verify formatting

@@ -1,7 +1,7 @@
 # Frontend
 
 The standalone React/TypeScript frontend lives in `frontend/`. It uses Vite,
-React Router, TanStack Query, Keycloak Authorization Code with PKCE, Tailwind CSS 4,
+React Router, TanStack Query, local JWT authentication, Tailwind CSS 4,
 and daisyUI 5. Existing dependency versions are recorded in `package-lock.json`;
 this reorganization adds no dependencies.
 
@@ -17,9 +17,10 @@ frontend/src/
     desks/                # Desk search, booking, and desk-change selection
     reservations/         # Personal history and cancellation
     administration/       # Office and desk administration
+    accounts/             # Login and administrator employee management
   shared/
     api/                  # HTTP client, Problem Details handling, API contracts
-    auth/                 # Keycloak session and query-cache lifecycle
+    auth/                 # JWT session and query-cache lifecycle
     lib/                  # Shared UTC calendar rules
     ui/                   # Reusable form, feedback, dialog, and office controls
   tests/                  # Cross-feature workflow tests and test setup
@@ -45,8 +46,7 @@ keyboard interaction, native dialogs, loading feedback, and error messages.
 
 ## Local development
 
-Start the API, PostgreSQL, Keycloak, and Mailpit using the repository's existing
-local configuration. Then, using Node.js 24:
+Start the API and PostgreSQL using the README setup and use an existing administrator account. Then, using Node.js 24:
 
 ```powershell
 cd frontend
@@ -57,9 +57,9 @@ npm run dev
 
 Open `http://localhost:5173`. The Vite server proxies `/api` to
 `http://localhost:8080`; for a directly running API, set `API_PROXY_TARGET` to
-`http://localhost:5080` in `.env.local`. The example file lists public Keycloak
-settings. Never place a client secret in browser configuration. Keycloak must
-allow this frontend's origin and `/auth/callback` redirect.
+`http://localhost:5080` in `.env.local`. Set the API's `Authentication:BrowserOrigin`
+to `http://localhost:5173`. Never place signing keys or passwords in frontend configuration.
+Access tokens stay in memory; session restoration uses an HttpOnly refresh cookie through the proxy.
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and
 `npm run format:check` from `frontend/`. CI runs the same checks.
@@ -77,3 +77,5 @@ Company-wide reservation browsing remains deferred. Hide administrator navigatio
 for employees, and enforce permissions in the API. Reservation dates remain
 inclusive `YYYY-MM-DD` values on the UTC calendar; do not convert them to local
 timestamps. Keep cached authenticated data scoped to the current session.
+
+Administrators create employees with assigned passwords and can deactivate/reactivate employees. No registration, email verification, password-change, or recovery screen is included.
