@@ -1,9 +1,10 @@
 using Domain.Exceptions;
-using Domain.Exceptions.Users;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Web.Api.Infrastructure;
 
@@ -49,6 +50,7 @@ internal sealed class GlobalExceptionHandler(
 
     private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
     {
+        DbUpdateException when IsDuplicateAccount(exception) => (StatusCodes.Status409Conflict, "Conflict"),
         ValidationException => (StatusCodes.Status400BadRequest, "One or more validation errors occurred."),
         HotDeskBookingException bookingException => ((int)bookingException.HttpStatusCode,
             ReasonPhrases.GetReasonPhrase((int)bookingException.HttpStatusCode)),
@@ -56,8 +58,19 @@ internal sealed class GlobalExceptionHandler(
         _ => (StatusCodes.Status500InternalServerError, "Internal Server Error"),
     };
 
+    private static bool IsDuplicateAccount(Exception exception) => exception is DbUpdateException
+    {
+        InnerException: PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            TableName: "AspNetUsers",
+            ConstraintName: "EmailIndex" or "UserNameIndex"
+        }
+    };
+
     private string? GetSafeErrorMessage(Exception exception) => exception switch
     {
+        DbUpdateException when IsDuplicateAccount(exception) => "An account with this email already exists.",
         HotDeskBookingException => exception.Message,
         _ when environment.IsDevelopment() => exception.Message,
         _ => null

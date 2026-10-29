@@ -57,12 +57,7 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI(options =>
-        {
-            options.OAuthClientId(builder.Configuration["Keycloak:SwaggerClientId"] ?? "hotdesk-swagger");
-            options.OAuthUsePkce();
-            options.EnablePersistAuthorization();
-        });
+        app.UseSwaggerUI();
     }
 
     app.MapAuthEndpoints();

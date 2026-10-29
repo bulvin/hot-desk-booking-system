@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IntegrationTests.Bookings;
 
 [Trait("Category", "Integration")]
+[Collection("Application host")]
 public sealed class BookDeskTests(BookingApiFixture fixture) : IClassFixture<BookingApiFixture>
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)

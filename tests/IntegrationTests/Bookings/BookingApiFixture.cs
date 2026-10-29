@@ -1,17 +1,20 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Application.Interfaces;
 using Domain.Desks;
 using Domain.Locations;
+using Domain.Users;
+using Infrastructure.Authentication;
 using Infrastructure.Data;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
 
 namespace IntegrationTests.Bookings;
@@ -19,7 +22,7 @@ namespace IntegrationTests.Bookings;
 public sealed class BookingApiFixture : IAsyncLifetime
 {
     public static readonly Guid EmployeeId = new("ce9e947b-4bb4-490f-8e56-624dfabfb803");
-    public static readonly DateOnly Today = new(2026, 10, 16);
+    public static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18")
         .WithCreateParameterModifier(parameters =>
         {
@@ -29,86 +32,35 @@ public sealed class BookingApiFixture : IAsyncLifetime
             parameters.HostConfig.NanoCPUs = 1_000_000_000;
         })
         .Build();
-    private readonly string _realmDirectory = Path.Combine(Path.GetTempPath(), $"hotdesk-tests-{Guid.NewGuid():N}");
     private readonly string _password = $"Test-{Guid.NewGuid():N}!";
-    private readonly string _clientSecret = Guid.NewGuid().ToString("N");
-    private KeycloakContainer? _keycloak;
     private WebApplicationFactory<Program>? _factory;
     private string _accessToken = string.Empty;
+    public IServiceProvider Services => _factory!.Services;
 
     public async ValueTask InitializeAsync()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        Directory.CreateDirectory(_realmDirectory);
-        var realmPath = Path.Combine(_realmDirectory, "hotdesk-realm.json");
-        var realm = JsonNode.Parse(await File.ReadAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "Integration", "hotdesk-realm.json"), cancellationToken))!;
-        realm["sslRequired"] = "none";
-        var api = realm["clients"]!.AsArray().Single(client => string.Equals(client!["clientId"]!.GetValue<string>(), "hotdesk-api", StringComparison.Ordinal))!;
-        // Password grant is restricted to this disposable test realm; production keeps PKCE.
-        api["directAccessGrantsEnabled"] = true;
-        api["secret"] = _clientSecret;
-        api["defaultClientScopes"] = new JsonArray("basic", "roles", "profile", "email");
-        api["protocolMappers"] = new JsonArray(JsonSerializer.SerializeToNode(new
-        {
-            name = "api-audience",
-            protocol = "openid-connect",
-            protocolMapper = "oidc-audience-mapper",
-            config = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["included.client.audience"] = "hotdesk-api",
-                ["access.token.claim"] = "true"
-            }
-        }));
-        realm["users"] = new JsonArray(JsonSerializer.SerializeToNode(new
-        {
-            id = EmployeeId,
-            username = "employee@example.test",
-            email = "employee@example.test",
-            firstName = "Booking",
-            lastName = "Employee",
-            enabled = true,
-            emailVerified = true,
-            realmRoles = new[] { "Employee" },
-            credentials = new[] { new { type = "password", value = _password, temporary = false } }
-        }));
-        await File.WriteAllTextAsync(realmPath, realm.ToJsonString(), cancellationToken);
-        _keycloak = new KeycloakBuilder("quay.io/keycloak/keycloak:26.8")
-            .WithRealm(realmPath)
-            .WithEnvironment("JAVA_OPTS_KC_HEAP", "-Xms64m -Xmx512m")
-            .WithEnvironment("JAVA_OPTS_APPEND", "-XX:ActiveProcessorCount=2")
-            .WithCreateParameterModifier(parameters =>
-            {
-                parameters.HostConfig ??= new();
-                // Leave room beyond the 512 MiB Java heap for native memory and startup.
-                parameters.HostConfig.Memory = 1024L * 1024 * 1024;
-                parameters.HostConfig.MemorySwap = parameters.HostConfig.Memory;
-                parameters.HostConfig.NanoCPUs = 2_000_000_000;
-            })
-            .Build();
-        await Task.WhenAll(_postgres.StartAsync(cancellationToken), _keycloak.StartAsync(cancellationToken));
-        var authority = $"{_keycloak.GetBaseAddress().TrimEnd('/')}/realms/hotdesk";
-        _factory = new BookingApplication(_postgres.GetConnectionString(), authority, _clientSecret);
-        // Start the actual application, including its migration hosted service.
-        using var startupClient = _factory.CreateClient();
-        using var keycloakClient = new HttpClient();
-        using var body = new FormUrlEncodedContent(new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["grant_type"] = "password",
-            ["client_id"] = "hotdesk-api",
-            ["client_secret"] = _clientSecret,
-            ["username"] = "employee@example.test",
-            ["password"] = _password
-        });
-        using var response = await keycloakClient.PostAsync($"{authority}/protocol/openid-connect/token", body, cancellationToken);
+        await _postgres.StartAsync(cancellationToken);
+        _factory = new BookingApplication(_postgres.GetConnectionString());
+        using var startupClient = CreateClient(authenticated: false);
+        await using var scope = Services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        Assert.True((await roles.CreateAsync(new IdentityRole<Guid>("Employee"))).Succeeded);
+        var account = new User { Id = EmployeeId, Email = "employee@example.test", UserName = "employee@example.test", FirstName = "Booking", LastName = "Employee" };
+        Assert.True((await users.CreateAsync(account, _password)).Succeeded);
+        Assert.True((await users.AddToRoleAsync(account, "Employee")).Succeeded);
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.SaveChangesAsync(cancellationToken);
+        using var response = await startupClient.PostAsJsonAsync("/api/auth/login", new { email = account.Email, password = _password }, cancellationToken);
         response.EnsureSuccessStatusCode();
-        using var token = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
-        _accessToken = token.RootElement.GetProperty("access_token").GetString()!;
+        using var token = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        _accessToken = token.RootElement.GetProperty("accessToken").GetString()!;
     }
 
     public HttpClient CreateClient(bool authenticated = true)
     {
-        var client = _factory!.CreateClient();
+        var client = _factory!.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), HandleCookies = false });
         if (authenticated)
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
         return client;
@@ -133,28 +85,12 @@ public sealed class BookingApiFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            if (_factory is not null)
-                await _factory.DisposeAsync();
-        }
-        finally
-        {
-            try
-            {
-                if (_keycloak is not null)
-                    await _keycloak.DisposeAsync();
-            }
-            finally
-            {
-                await _postgres.DisposeAsync();
-                if (Directory.Exists(_realmDirectory))
-                    Directory.Delete(_realmDirectory, recursive: true);
-            }
-        }
+        if (_factory is not null)
+            await _factory.DisposeAsync();
+        await _postgres.DisposeAsync();
     }
 
-    private sealed class BookingApplication(string connectionString, string authority, string clientSecret) : WebApplicationFactory<Program>
+    private sealed class BookingApplication(string connectionString) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -162,19 +98,16 @@ public sealed class BookingApiFixture : IAsyncLifetime
             builder.UseSetting("RateLimiting:IpPermitLimit", "100000");
             builder.UseSetting("RateLimiting:UserPermitLimit", "100000");
             builder.UseSetting("RateLimiting:WritePermitLimit", "100000");
+            builder.UseSetting("RateLimiting:AuthPermitLimit", "100000");
             builder.UseSetting("ConnectionStrings:Database", connectionString);
             builder.UseSetting("Database:SeedSampleData", "false");
-            builder.UseSetting("Keycloak:Authority", authority);
-            builder.UseSetting("Keycloak:BackchannelAuthority", authority);
-            builder.UseSetting("Keycloak:ClientSecret", clientSecret);
-            builder.UseSetting("Keycloak:Audience", "hotdesk-api");
-            builder.UseSetting("Keycloak:RequireHttpsMetadata", "false");
+            builder.UseSetting("Jwt:SigningKey", Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IDateTimeProvider>();
                 services.AddSingleton<IDateTimeProvider>(new DateTimeProvider
                 {
-                    UtcNow = new DateTime(2026, 10, 16, 12, 0, 0, DateTimeKind.Utc)
+                    UtcNow = DateTime.UtcNow
                 });
             });
         }

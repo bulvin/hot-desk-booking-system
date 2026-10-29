@@ -12,7 +12,6 @@ internal static class ServiceCollectionExtensions
     {
         internal IServiceCollection AddSwaggerGenWithAuth(IConfiguration configuration)
         {
-            var authority = (configuration["Keycloak:Authority"] ?? "http://localhost:8090/realms/hotdesk").TrimEnd('/');
             services.AddSwaggerGen(o =>
             {
                 o.SwaggerDoc("v1", new OpenApiInfo { Title = "HotDesk Booking API", Version = "v1" });
@@ -26,33 +25,13 @@ internal static class ServiceCollectionExtensions
 
                 var securityScheme = new OpenApiSecurityScheme
                 {
-                    Type = SecuritySchemeType.OAuth2,
-                    Description = "Log in through Keycloak using Authorization Code + PKCE.",
-                    Flows = new OpenApiOAuthFlows
-                    {
-                        AuthorizationCode = new OpenApiOAuthFlow
-                        {
-                            AuthorizationUrl = new Uri($"{authority}/protocol/openid-connect/auth"),
-                            TokenUrl = new Uri($"{authority}/protocol/openid-connect/token"),
-                            Scopes = new Dictionary<string, string>(StringComparer.Ordinal)
-                            {
-                                ["openid"] = "OpenID Connect",
-                                ["profile"] = "User profile",
-                                ["email"] = "Verified email"
-                            }
-                        }
-                    }
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Paste the access token returned by POST /api/auth/login."
                 };
-
-                o.AddSecurityDefinition("Keycloak", securityScheme);
-
-                o.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecuritySchemeReference("Keycloak", document),
-                        ["openid", "profile", "email"]
-                    }
-                });
+                o.AddSecurityDefinition("Bearer", securityScheme);
+                o.OperationFilter<BearerSecurityOperationFilter>();
                 o.OperationFilter<RateLimitOperationFilter>();
                 o.EnableAnnotations();
             });

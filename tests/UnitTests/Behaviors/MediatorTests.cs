@@ -101,6 +101,7 @@ public sealed class MediatorTests
         });
         services.AddScoped<IUserContext>(_ => new Mock<IUserContext>(MockBehavior.Strict).Object);
         services.AddApplication();
+        services.AddScoped(_ => new Mock<IAccountService>(MockBehavior.Strict).Object);
 
         services.AddScoped(_ => _desks.Object);
         services.AddScoped(_ => _locations.Object);

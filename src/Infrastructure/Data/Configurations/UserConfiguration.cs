@@ -4,15 +4,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Data.Configurations;
 
-public sealed class UserConfiguration : EntityConfiguration<User>
+public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public override void Configure(EntityTypeBuilder<User> builder)
+    public void Configure(EntityTypeBuilder<User> builder)
     {
-        base.Configure(builder);
-        builder.ToTable("Users");
-        builder.Property(user => user.Id).ValueGeneratedNever();
+        builder.ToTable("AspNetUsers");
+        builder.HasIndex(user => user.NormalizedEmail).IsUnique();
         builder.Property(user => user.Email).IsRequired();
         builder.Property(user => user.FirstName).IsRequired();
         builder.Property(user => user.LastName).IsRequired();
+        builder.Property(user => user.CreatedAt).IsRequired();
+        builder.Property(user => user.UpdatedAt).IsRequired();
     }
 }

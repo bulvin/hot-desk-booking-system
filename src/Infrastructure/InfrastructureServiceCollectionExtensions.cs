@@ -1,14 +1,18 @@
 using System.Security.Claims;
+using System.Text;
+using Application.Accounts;
 using Application.Interfaces;
 using Domain;
 using Domain.Desks;
 using Domain.Locations;
 using Domain.Reservations;
+using Domain.Users;
 using Infrastructure.Authentication;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,45 +37,40 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddScoped<IReservationRepository, ReservationRepository>();
             services.AddHttpContextAccessor();
             services.AddScoped<IUserContext, UserContext>();
-            services.AddScoped<BookingUserSynchronizer>();
-            services.AddHttpClient<KeycloakTokenValidationEvents>((provider, client) =>
-                client.Timeout = TimeSpan.FromSeconds(provider.GetRequiredService<IOptions<KeycloakOptions>>().Value.IntrospectionTimeoutSeconds));
-
             services.AddDatabase(configuration);
-
-            services.AddOptions<KeycloakOptions>().Bind(configuration.GetSection("Keycloak"))
-                .Validate(options => options.IntrospectionTimeoutSeconds > 0, "Keycloak:IntrospectionTimeoutSeconds must be positive.")
-                .Validate(options => Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri)
-                    && uri.Scheme is "http" or "https", "Keycloak:Authority must be an absolute HTTP(S) realm URL.")
-                .Validate(options => options.BackchannelAuthority is null
-                    || Uri.TryCreate(options.BackchannelAuthority, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https",
-                    "Keycloak:BackchannelAuthority must be an absolute HTTP(S) realm URL.")
-                .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Keycloak:Audience is required.")
-                .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret),
-                    "Keycloak:ClientSecret is required for live token introspection.")
+            services.AddScoped<IAccountService, AccountService>();
+            services.AddScoped<JwtIssuer>();
+            services.AddScoped<LocalTokenValidationEvents>();
+            services.AddIdentityCore<User>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.Password.RequiredLength = 8;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            }).AddRoles<IdentityRole<Guid>>().AddEntityFrameworkStores<AppDbContext>();
+            services.AddOptions<JwtOptions>().Bind(configuration.GetSection("Jwt"))
+                .Validate(options => Encoding.UTF8.GetByteCount(options.SigningKey) >= 32, "Jwt:SigningKey must contain at least 32 bytes of secret key material.")
+                .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer) && !string.IsNullOrWhiteSpace(options.Audience), "JWT issuer and audience are required.")
+                .Validate(options => options.AccessTokenMinutes > 0 && options.SessionDays > 0, "Token lifetimes must be positive.")
                 .ValidateOnStart();
-
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
             services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-                .Configure<IOptions<KeycloakOptions>>((options, keycloakOptions) =>
+                .Configure<IOptions<JwtOptions>>((options, settings) =>
                 {
-                    var keycloak = keycloakOptions.Value;
-                    options.Authority = keycloak.Authority.TrimEnd('/');
-                    options.MetadataAddress = $"{keycloak.ServerAuthority}/.well-known/openid-configuration";
-                    options.Audience = keycloak.Audience;
-                    options.RequireHttpsMetadata = keycloak.RequireHttpsMetadata;
                     options.MapInboundClaims = false;
                     options.IncludeErrorDetails = false;
-                    options.EventsType = typeof(KeycloakTokenValidationEvents);
+                    options.EventsType = typeof(LocalTokenValidationEvents);
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidIssuer = keycloak.Authority.TrimEnd('/'),
-                        ValidAudience = keycloak.Audience,
+                        ValidIssuer = settings.Value.Issuer,
+                        ValidAudience = settings.Value.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Value.SigningKey)),
+                        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                         ValidateIssuer = true,
                         ValidateAudience = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        NameClaimType = "preferred_username",
+                        NameClaimType = "email",
                         RoleClaimType = ClaimTypes.Role,
                         ClockSkew = TimeSpan.Zero
                     };

@@ -11,7 +11,7 @@ internal static class RateLimitingExtensions
     {
         services.AddOptions<ApiRateLimitingOptions>()
             .Bind(configuration.GetSection("RateLimiting"))
-            .Validate(options => options.IpPermitLimit > 0 && options is { UserPermitLimit: > 0, WritePermitLimit: > 0, WindowSeconds: > 0 },
+            .Validate(options => options.IpPermitLimit > 0 && options is { UserPermitLimit: > 0, WritePermitLimit: > 0, WindowSeconds: > 0, AuthPermitLimit: > 0 },
                 "Rate limiting permit limits and window duration must be positive.")
             .ValidateOnStart();
         services.AddSingleton<IpRateLimiter>();
@@ -19,6 +19,13 @@ internal static class RateLimitingExtensions
         services.AddOptions<Microsoft.AspNetCore.RateLimiting.RateLimiterOptions>()
             .Configure<IOptions<ApiRateLimitingOptions>>((options, settings) =>
             {
+                options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = settings.Value.AuthPermitLimit,
+                        Window = TimeSpan.FromSeconds(settings.Value.WindowSeconds),
+                        QueueLimit = 0
+                    }));
                 options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
                     CreateUserLimiter(settings.Value, writesOnly: false),
                     CreateUserLimiter(settings.Value, writesOnly: true));

@@ -7,6 +7,15 @@ namespace Infrastructure;
 
 public class UnitOfWork(AppDbContext dbContext, IDateTimeProvider dateTimeProvider) : IUnitOfWork
 {
+    public async Task<T> ExecuteInTransaction<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var result = await operation(cancellationToken);
+        await SaveChanges(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
     public async Task SaveChanges(CancellationToken cancellationToken = default)
     {
         UpdateEntities();
