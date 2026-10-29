@@ -8,7 +8,10 @@ internal sealed class AuthOriginFilter(IConfiguration configuration) : IEndpoint
         var origin = request.Headers.Origin.ToString();
         var expected = configuration["Authentication:BrowserOrigin"];
         var sameOrigin = $"{request.Scheme}://{request.Host}";
-        if (request.Headers["Sec-Fetch-Site"] == "cross-site"
+        if ((request.Headers["Sec-Fetch-Site"] == "cross-site"
+                && (!configuration.GetValue<bool>("Authentication:CrossSiteCookies")
+                    || string.IsNullOrEmpty(origin)
+                    || !string.Equals(origin, expected, StringComparison.OrdinalIgnoreCase)))
             || (!string.IsNullOrEmpty(origin) && !string.Equals(origin, expected, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(origin, sameOrigin, StringComparison.OrdinalIgnoreCase)))
             return TypedResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Forbidden", detail: "Request origin is not allowed.");
