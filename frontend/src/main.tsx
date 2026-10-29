@@ -2,18 +2,12 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './app/App';
-import { callback, keycloak, queryClient } from './shared/auth/session';
+import { restoreSession, queryClient } from './shared/auth/session';
 import './app/styles.css';
 
 const root = createRoot(document.getElementById('root')!);
 async function start() {
-    await keycloak.init({
-        onLoad: 'login-required',
-        pkceMethod: 'S256',
-        redirectUri: callback(),
-    });
-    if (window.location.pathname === '/auth/callback')
-        window.history.replaceState({}, '', '/desks');
+    await restoreSession();
     root.render(
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>

@@ -6,6 +6,14 @@ export interface Profile {
     roles: string[];
     emailConfirmed: boolean;
 }
+export interface Account {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    isActive: boolean;
+    isAdministrator: boolean;
+}
 export interface Address {
     street: string;
     buildingNumber: string;

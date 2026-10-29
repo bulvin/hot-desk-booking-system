@@ -1,4 +1,3 @@
-import Keycloak from 'keycloak-js';
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
@@ -7,26 +6,87 @@ export const queryClient = new QueryClient({
         mutations: { retry: false },
     },
 });
-export const keycloak = new Keycloak({
-    url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8090',
-    realm: import.meta.env.VITE_KEYCLOAK_REALM || 'hotdesk',
-    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'hotdesk-frontend',
-});
-export const callback = () => `${window.location.origin}/auth/callback`;
+let token: string | null = null;
+let expiresAt = 0;
+let generation = 0;
+let refreshing: Promise<string> | null = null;
+export const isAuthenticated = () => token !== null;
 export function expireSession() {
-    keycloak.clearToken();
+    generation++;
+    token = null;
+    expiresAt = 0;
     queryClient.clear();
     window.dispatchEvent(new Event('hotdesk:session-ended'));
 }
-keycloak.onAuthLogout = () => {
+async function accept(
+    response: Response,
+    expectedGeneration: number,
+): Promise<string> {
+    if (!response.ok)
+        throw new Error(
+            'Unable to sign in. Check your credentials or try again later.',
+        );
+    const data = (await response.json()) as {
+        accessToken: string;
+        expiresAt: string;
+    };
+    if (generation !== expectedGeneration) throw new Error('Session ended.');
+    token = data.accessToken;
+    expiresAt = Date.parse(data.expiresAt);
+    return token;
+}
+export async function login(email: string, password: string) {
+    const current = ++generation;
+    await accept(
+        await fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+        }),
+        current,
+    );
     queryClient.clear();
-    window.dispatchEvent(new Event('hotdesk:session-ended'));
-};
+}
+export async function accessToken(force = false): Promise<string> {
+    if (!force && token && expiresAt > Date.now() + 30000) return token;
+    if (!refreshing) {
+        const current = generation;
+        // The Web Lock also serializes refreshes from different tabs sharing the cookie.
+        const refresh = () =>
+            fetch('/api/auth/refresh', {
+                method: 'POST',
+                credentials: 'same-origin',
+            }).then((response) => accept(response, current));
+        refreshing = Promise.resolve(
+            navigator.locks
+                ? navigator.locks.request('hotdesk-refresh', refresh)
+                : refresh(),
+        )
+            .catch((error) => {
+                if (current === generation) expireSession();
+                throw error;
+            })
+            .finally(() => {
+                refreshing = null;
+            });
+    }
+    return refreshing!;
+}
+export async function restoreSession() {
+    try {
+        await accessToken();
+    } catch {
+        /* An absent session displays the login form. */
+    }
+}
 export async function logout() {
-    queryClient.clear();
-    await keycloak.logout({ redirectUri: `${window.location.origin}/` });
+    // Let any in-flight refresh settle before revoking the current cookie.
+    await refreshing?.catch(() => undefined);
+    const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+    });
+    if (!response.ok) throw new Error('Sign out failed. Please try again.');
+    expireSession();
 }
-
-keycloak.onTokenExpired = () => {
-    void keycloak.updateToken(30).catch(expireSession);
-};

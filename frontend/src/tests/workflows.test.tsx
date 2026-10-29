@@ -18,7 +18,7 @@ vi.mock('../shared/api/client', async () => {
     return { ...original, api: vi.fn() };
 });
 vi.mock('../shared/auth/session', () => ({
-    keycloak: { authenticated: true },
+    isAuthenticated: () => true,
     callback: vi.fn(),
     logout: vi.fn(),
 }));

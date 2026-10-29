@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
-import { callback, keycloak, logout } from '../shared/auth/session';
+import { isAuthenticated, logout } from '../shared/auth/session';
 import { ErrorMessage, Loading } from '../shared/ui/components';
 import { DeskSearch } from '../features/desks/DeskSearch';
 import { Reservations } from '../features/reservations/Reservations';
+import { Login } from '../features/accounts/Login';
+import { Users } from '../features/accounts/Users';
 import { Admin } from '../features/administration/Admin';
 import type { Profile } from '../shared/api/types';
 
@@ -15,7 +17,12 @@ export function Navigation({ admin }: { admin: boolean }) {
             {[
                 ['/desks', 'Find a desk'],
                 ['/reservations', 'My reservations'],
-                ...(admin ? [['/admin', 'Administration']] : []),
+                ...(admin
+                    ? [
+                          ['/admin', 'Administration'],
+                          ['/users', 'Employees'],
+                      ]
+                    : []),
             ].map(([to, label]) => (
                 <NavLink
                     key={to}
@@ -31,7 +38,7 @@ export function Navigation({ admin }: { admin: boolean }) {
     );
 }
 export function App() {
-    const [ended, setEnded] = useState(!keycloak.authenticated);
+    const [ended, setEnded] = useState(!isAuthenticated());
     const [logoutError, setLogoutError] = useState<unknown>(null);
     useEffect(() => {
         const listener = () => setEnded(true);
@@ -45,21 +52,7 @@ export function App() {
         enabled: !ended,
     });
     const admin = profile.data?.roles.includes('Administrator') ?? false;
-    if (ended)
-        return (
-            <main className="max-w-lg mx-auto p-8 mt-20">
-                <h1 className="text-3xl font-bold">Welcome to HotDesk</h1>
-                <p className="my-5">Sign in to plan your next office day.</p>
-                <button
-                    className="btn"
-                    onClick={() =>
-                        void keycloak.login({ redirectUri: callback() })
-                    }
-                >
-                    Sign in
-                </button>
-            </main>
-        );
+    if (ended) return <Login onSuccess={() => setEnded(false)} />;
     return (
         <div className="min-h-screen bg-base-200 text-base-content">
             <a href="#main" className="sr-only focus:not-sr-only">
@@ -106,6 +99,16 @@ export function App() {
                     </>
                 ) : (
                     <Routes>
+                        <Route
+                            path="/users"
+                            element={
+                                admin ? (
+                                    <Users />
+                                ) : (
+                                    <Navigate to="/desks" replace />
+                                )
+                            }
+                        />
                         <Route path="/desks" element={<DeskSearch />} />
                         <Route
                             path="/reservations"

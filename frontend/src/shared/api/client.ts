@@ -1,4 +1,4 @@
-import { keycloak, expireSession } from '../auth/session';
+import { accessToken, expireSession } from '../auth/session';
 export class ApiError extends Error {
     constructor(
         public status: number,
@@ -12,16 +12,27 @@ export async function api<T>(
     path: string,
     options: RequestInit = {},
 ): Promise<T> {
+    let token: string;
     try {
-        await keycloak.updateToken(30);
+        token = await accessToken();
     } catch {
-        expireSession();
         throw new ApiError(401, 'Your session ended. Sign in again.');
     }
     const headers = new Headers(options.headers);
-    headers.set('Authorization', `Bearer ${keycloak.token}`);
     if (options.body) headers.set('Content-Type', 'application/json');
-    const response = await fetch(`/api${path}`, { ...options, headers });
+    const send = () => {
+        headers.set('Authorization', `Bearer ${token}`);
+        return fetch(`/api${path}`, { ...options, headers });
+    };
+    let response = await send();
+    if (response.status === 401) {
+        try {
+            token = await accessToken(true);
+            response = await send();
+        } catch {
+            throw new ApiError(401, 'Your session ended. Sign in again.');
+        }
+    }
     if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         if (response.status === 401) expireSession();
