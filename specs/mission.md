@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Build a RESTful API for one company to manage shared desks across one or more office locations. Employees find a desk and reserve it for an inclusive range of 1-7 whole calendar days.
+HotDeskBooking is a desk reservation application for company with one or more office locations. It combines a React and TypeScript browser interface with an ASP.NET Core RESTful API and PostgreSQL storage. Employees find available desks, reserve them for an inclusive range of 1-7 whole calendar days, and manage their own reservations. Administrators manage offices, desks, and employee accounts.
 
-The current priority is to refresh and stabilize the existing API: maintain supported dependencies, make code quality checks repeatable, and close gaps in booking correctness before adding endpoints.
+The current priority is to stabilize the existing application: maintain supported dependencies, keep code quality checks repeatable, and close the remaining gaps in booking correctness.
 
 ## Target audience
 
@@ -41,26 +41,8 @@ Each deployment serves one company. Multi-company tenancy is outside the agreed 
 - Concurrent requests must not create overlapping active reservations for the same desk. A database safeguard is still required.
 - Employees must not receive another employee's identity through reservation details; administrator access is intentional.
 
-## Decisions required before related implementation
 
-- Decide whether an employee may hold multiple desk reservations for the same day.
 
-## Success criteria for the refresh
-
-- The API, tests, and containers run on .NET 10 with PostgreSQL 18.
-- Dependency choices are recorded and automated restore/build/test/format/analyzer checks pass.
-- Desk search, desk changes, date boundaries, and concurrent booking have meaningful regression coverage.
-- Database upgrades preserve records and migration history; local startup instructions are reproducible.
-- HTTP responses and authorization behavior are consistent with the agreed workflows.
-
-Keep the four-layer architecture. The React frontend and supporting read endpoints are approved follow-up work; hourly/recurring bookings, multi-company tenancy, notifications, reporting, production deployment, and additional endpoints remain deferred.
+Keep the API's four-layer architecture and the standalone frontend. Hourly/recurring bookings, multi-company tenancy, notifications, reporting, production deployment, dedicated reservation retrieval, and company-wide reservation listing remain deferred.
 
 See [tech-stack.md](tech-stack.md) for implementation choices and [roadmap.md](roadmap.md) for delivery order.
-
-## Approved React frontend follow-up
-
-The React frontend and minimal authenticated office/personal-reservation read APIs are now approved as separate scope.
-
-## Approved local account management
-
-Replace Keycloak end to end with ASP.NET Core Identity and JWT sessions. Administrators create, list, deactivate, and reactivate employees. Administrator provisioning is handled separately; no bootstrap command is provided. Multiple administrator accounts are supported. No public registration, password setup/change/recovery, email confirmation, user deletion, or role editing is included. Preserve historical booking ownership and database migration history; no existing Keycloak account import is required. See the README for configuration and authentication contracts.

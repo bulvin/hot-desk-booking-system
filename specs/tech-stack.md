@@ -17,8 +17,13 @@ See [mission.md](mission.md) for the product scope and [roadmap.md](roadmap.md) 
 | Seq | Collects structured logs for searching and analysis during local development |
 | Swagger | Shows the available API actions and lets developers try them |
 | xUnit and Moq | Test booking rules and other application behavior |
+| React and TypeScript | Build the browser interface with typed components |
+| Vite | Runs the frontend development server and builds the application |
+| React Router | Handles navigation between frontend pages |
+| TanStack Query | Fetches API data and manages its cache |
+| Tailwind CSS and daisyUI | Style the interface with utilities and reusable components |
+| Vitest and Testing Library | Test frontend components and user workflows |
 
-Package versions are defined in the project files; the SDK version is defined in `global.json`.
 
 ## How the code is organized
 
@@ -28,11 +33,6 @@ The application has four parts, each with a separate responsibility:
 - **Application:** coordinates actions such as booking a desk and checks incoming requests.
 - **Infrastructure:** handles database access, login support, and other external services.
 - **Web.Api:** receives requests from other applications and returns results or clear errors.
-
-
-## Frontend
-
-The standalone React/TypeScript application uses Vite, React Router, TanStack Query, in-memory JWT access tokens and HttpOnly refresh cookies, and Tailwind CSS with daisyUI. See [frontend.md](frontend.md) for configuration and dependency decisions.
 
 ## API rate limiting
 
@@ -44,13 +44,3 @@ The API uses the .NET shared framework's in-memory fixed-window rate limiters; n
 | RateLimiting:UserPermitLimit | 120 | Total requests per authenticated local user across all API routes |
 | RateLimiting:WritePermitLimit | 20 | POST, PUT, PATCH and DELETE requests per user across all API routes |
 | RateLimiting:WindowSeconds | 60 | Fixed-window duration in seconds |
-
-## Local authentication dependency decision
-
-`Microsoft.AspNetCore.Identity.EntityFrameworkCore` 10.0.12 is approved and aligned with the existing framework/EF package versions. It provides maintained password hashing, lockout, roles, and PostgreSQL persistence through the existing Npgsql provider. Existing JwtBearer/IdentityModel packages validate and issue standard HS256 JWTs. Identity's proprietary bearer-token endpoints are not used. No MailKit dependency is added because email workflows are deferred. Remove `keycloak-js` and `Testcontainers.Keycloak`; no new frontend dependency is needed.
-
-`RateLimiting:AuthPermitLimit` defaults to 30 requests per connection IP per window for `/api/auth` endpoints. Local sessions are checked on each authenticated request, preserving immediate revocation without an external introspection service.
-
-## Unified Identity user
-
-`Domain.Users.User` inherits `IdentityUser<Guid>` and maps to `HotDeskBooking.AspNetUsers`. Reservation ownership, sessions, and Identity roles use the same user ID. Domain intentionally references the existing `Microsoft.AspNetCore.App` shared framework for Identity abstractions; no additional NuGet dependency is added. The separate booking profile entity is removed. An additive migration moves legacy profiles while preserving reservations and account credentials; legacy profiles without credentials become inactive accounts without passwords or roles.
