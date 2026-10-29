@@ -102,7 +102,7 @@ export function Reservations({ admin }: { admin: boolean }) {
                                 <span className="badge badge-outline mt-3">
                                     {r.status === 'Reserved' &&
                                     r.endDate < today
-                                        ? 'Past booking'
+                                        ? 'Completed'
                                         : r.status}
                                 </span>
                             </div>
