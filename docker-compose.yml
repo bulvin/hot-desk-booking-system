@@ -12,8 +12,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      keycloak:
-        condition: service_started
 
   postgres:
     image: postgres:18
@@ -33,25 +31,7 @@ services:
     volumes:
       - ./.containers/postgres:/var/lib/postgresql
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.8
-    command: ["--config-file=/run/secrets/keycloak.conf", "start"]
-    restart: unless-stopped
-    container_name: keycloak
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: postgres
-    secrets:
-      - source: keycloak_config
-        target: keycloak.conf
-
 
 secrets:
   postgres_password:
     file: ./.secrets/postgres_password.txt
-  keycloak_config:
-    file: ./.secrets/keycloak.conf

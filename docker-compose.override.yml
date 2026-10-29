@@ -5,9 +5,6 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/hotdesk.pfx
-      - Keycloak__Authority=http://localhost:8090/realms/hotdesk
-      - Keycloak__BackchannelAuthority=http://keycloak:8080/realms/hotdesk
-      - Keycloak__RequireHttpsMetadata=false
       - Serilog__WriteTo__Seq__Args__serverUrl=http://seq:5341
     ports:
       - "8080:8080"
@@ -23,21 +20,7 @@ services:
 
   postgres:
     ports:
-      - "5432:5432"
-
-  keycloak:
-    command: ["--config-file=/run/secrets/keycloak.conf", "start-dev", "--import-realm"]
-    depends_on:
-      mailpit:
-        condition: service_started
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_HOSTNAME: http://localhost:8090
-      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-    ports:
-      - "8090:8080"
-    volumes:
-      - ./keycloak/hotdesk-realm.json:/opt/keycloak/data/import/hotdesk-realm.json:ro
+      - "5433:5432"
 
   seq:
     image: datalust/seq:2025.2
