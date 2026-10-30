@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { isAuthenticated, logout } from '../shared/auth/session';
@@ -60,15 +60,15 @@ export function App() {
             </a>
             <header className="bg-base-100 border-b border-base-300">
                 <div className="max-w-7xl mx-auto px-5 py-5 flex flex-wrap items-center justify-between gap-5">
-                    <a
-                        href="/desks"
+                    <Link
+                        to="/desks"
                         className="flex items-center gap-3 font-bold text-2xl"
                     >
                         <span className="rounded-xl bg-neutral text-neutral-content px-3 py-2 text-lg">
                             H.
                         </span>
                         HotDesk
-                    </a>
+                    </Link>
                     <Navigation admin={admin} />
                     <div className="flex items-center gap-3 text-sm">
                         <span>

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { api, ApiError } from '../shared/api/client';
 import { DeskSearch } from '../features/desks/DeskSearch';
-import { Navigation } from '../app/App';
+import { App, Navigation } from '../app/App';
 import { Reservations } from '../features/reservations/Reservations';
 import { Admin } from '../features/administration/Admin';
 import { addDays, utcToday } from '../shared/lib/dates';
@@ -78,6 +78,41 @@ beforeEach(() => {
               ? paged([reservation])
               : paged([desk]),
     );
+});
+it('returns from reservations to desk search when the logo is clicked', async () => {
+    // Arrange
+    request.mockImplementation(async (path) => {
+        if (path === '/profile')
+            return {
+                firstName: 'Demo',
+                lastName: 'Employee',
+                roles: ['Employee'],
+            };
+        if (path.startsWith('/locations?')) return paged([office]);
+        if (path.startsWith('/reservations/mine')) return paged([reservation]);
+        return paged([desk]);
+    });
+    mount(<App />);
+    await screen.findByRole('combobox', { name: 'Office' });
+    await userEvent.click(
+        screen.getByRole('link', { name: 'My reservations' }),
+    );
+    await screen.findByRole('heading', { name: 'My reservations' });
+
+    // Act
+    await userEvent.click(screen.getByRole('link', { name: /HotDesk/ }));
+
+    // Assert
+    expect(
+        await screen.findByRole('combobox', { name: 'Office' }),
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Find a desk' })).toHaveAttribute(
+        'aria-current',
+        'page',
+    );
+    expect(
+        screen.queryByRole('heading', { name: 'My reservations' }),
+    ).not.toBeInTheDocument();
 });
 it('shows administrator navigation only for administrators', () => {
     const view = render(
