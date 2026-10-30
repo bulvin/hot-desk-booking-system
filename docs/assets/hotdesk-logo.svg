@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="title desc">
+  <title id="title">HotDeskBooking</title>
+  <desc id="desc">The application's H. mark beside the full name HotDeskBooking. A desk for your next office day.</desc>
+  <rect width="960" height="240" rx="24" fill="#fafafa"/>
+  <rect x="48" y="64" width="120" height="112" rx="24" fill="#09090b"/>
+  <text x="108" y="139" text-anchor="middle" fill="#e4e4e7" font-family="ui-sans-serif, system-ui, sans-serif" font-size="48" font-weight="700">H.</text>
+  <text x="200" y="114" fill="#18181b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="56" font-weight="700">HotDeskBooking</text>
+  <text x="202" y="158" fill="#52525b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="25">A desk for your next office day.</text>
+</svg>
