@@ -12,8 +12,8 @@
     <File Path="docker-compose.yml" />
   </Folder>
   <Folder Name="/Solution Items/workflows/">
+    <File Path=".github/workflows/azure-static-web-apps-nice-mushroom-05eb47a10.yml" />
     <File Path=".github/workflows/ci.yml" />
-    <File Path=".github/workflows/release.yml" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/IntegrationTests/IntegrationTests.csproj" />
