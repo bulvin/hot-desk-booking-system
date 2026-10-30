@@ -3,20 +3,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ASPNETCORE_HTTPS_PORTS=8081
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/hotdesk.pfx
+      - ASPNETCORE_HTTPS_PORTS=
       - Serilog__WriteTo__Seq__Args__serverUrl=http://seq:5341
     ports:
       - "8080:8080"
-      - "8081:8081"
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - type: bind
-        source: ./.https/hotdesk.pfx
-        target: /https/hotdesk.pfx
-        read_only: true
-        bind:
-          create_host_path: false
 
   postgres:
     ports:

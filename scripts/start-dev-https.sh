@@ -19,4 +19,4 @@ dotnet dev-certs https --trust
 dotnet user-secrets set 'Kestrel:Certificates:Default:Password' "$certificate_password" --project src/Web.Api
 unset certificate_password
 
-docker compose up --build -d
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.https.yml up --build -d

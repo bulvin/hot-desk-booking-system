@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/Solution Items/Docker/">
     <File Path=".dockerignore" />
+    <File Path="docker-compose.https.yml" />
     <File Path="docker-compose.override.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
